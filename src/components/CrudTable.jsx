@@ -101,30 +101,30 @@ export default function CrudTable({
     <div className="flex flex-col gap-5">
       {/* ── Header Card ── */}
       <div
-        className="glass-strong rounded-2xl px-5 py-4 flex items-center justify-between"
+        className="glass-strong rounded-2xl px-4 py-3 md:px-5 md:py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         style={{ borderTop: `2px solid ${accentColor}40` }}
       >
         <div className="flex items-center gap-3">
           {TitleIcon && (
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: `${accentColor}20`, border: `1px solid ${accentColor}30` }}
             >
-              <TitleIcon size={19} style={{ color: accentColor }} />
+              <TitleIcon size={17} style={{ color: accentColor }} />
             </div>
           )}
           <div>
-            <h1 className="text-base font-black text-slate-100">{title}</h1>
+            <h1 className="text-sm md:text-base font-black text-slate-100">{title}</h1>
             <p className="text-xs text-slate-500 font-medium">{sorted.length} {lang === 'ar' ? 'سجل' : 'records'}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          {/* Search */}
-          <div className="relative hidden sm:block">
+        <div className="flex items-center gap-2">
+          {/* Search — full width on mobile, fixed on sm+ */}
+          <div className="relative flex-1 sm:flex-none">
             <Search size={14} className="absolute top-1/2 -translate-y-1/2 end-3 text-slate-600 pointer-events-none" />
             <input
-              className="erp-input pe-9 text-xs w-52"
+              className="erp-input pe-9 text-xs w-full sm:w-48"
               placeholder={t('search')}
               value={search}
               onChange={handleSearch}
@@ -135,29 +135,19 @@ export default function CrudTable({
           {effectiveAddForm && (
             <button
               onClick={() => setShowAdd(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-100"
+              className="flex items-center gap-1.5 px-3 md:px-4 py-2.5 rounded-xl text-xs font-bold text-white transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-100 flex-shrink-0"
               style={{
                 background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`,
                 boxShadow: `0 4px 16px ${accentColor}40`,
               }}
             >
-              <Plus size={15} />
-              {addLabel || t('add')}
+              <Plus size={14} />
+              <span className="hidden sm:inline">{addLabel || t('add')}</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* Mobile search */}
-      <div className="sm:hidden relative">
-        <Search size={14} className="absolute top-1/2 -translate-y-1/2 end-3 text-slate-600 pointer-events-none" />
-        <input
-          className="erp-input pe-9 text-xs w-full"
-          placeholder={t('search')}
-          value={search}
-          onChange={handleSearch}
-        />
-      </div>
 
       {/* ── Table Card ── */}
       <div className="glass-strong rounded-2xl overflow-hidden">

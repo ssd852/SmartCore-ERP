@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useApp } from '../context/AppContext';
 import { supabase } from '../config/supabaseClient';
 import {
-  Sun, Moon, Globe, PanelLeftClose, PanelLeftOpen, Bell,
+  Sun, Moon, Globe, PanelLeftClose, PanelLeftOpen, Bell, Menu,
   ChevronDown, LogOut, User, Settings, Monitor, Smartphone
 } from 'lucide-react';
 
@@ -25,7 +25,7 @@ const BREADCRUMBS = {
   '/reports':    ['reports'],
 };
 
-export default function Topbar() {
+export default function Topbar({ onMenuClick }) {
   const { t } = useTranslation();
   const { lang, setLang, viewMode, setViewMode, theme, toggleTheme, sidebarCollapsed, setSidebarCollapsed } = useApp();
   const navigate = useNavigate();
@@ -77,10 +77,20 @@ export default function Topbar() {
     >
       {/* ── Left/Start: Sidebar toggle + Breadcrumb ── */}
       <div className="flex items-center gap-3">
-        {/* Collapse toggle */}
+        {/* Hamburger — only on real mobile (hidden on md+) */}
+        {onMenuClick && (
+          <button
+            onClick={onMenuClick}
+            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-white/8 transition-all duration-200"
+            title="Menu"
+          >
+            <Menu size={18} />
+          </button>
+        )}
+        {/* Collapse toggle — only on desktop */}
         <button
           onClick={() => setSidebarCollapsed(v => !v)}
-          className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/8 transition-all duration-200"
+          className="hidden md:flex w-8 h-8 rounded-lg items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/8 transition-all duration-200"
           title={sidebarCollapsed ? t('home') : 'Collapse'}
         >
           {sidebarCollapsed

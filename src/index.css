@@ -169,6 +169,12 @@ body.lang-en {
 }
 .erp-table tr:last-child td { border-bottom: none; }
 
+/* ── Mobile table: tighter padding so rows don't overflow ── */
+@media (max-width: 640px) {
+  .erp-table th { padding: 0.5rem 0.6rem; font-size: 0.7rem; }
+  .erp-table td { padding: 0.625rem 0.6rem; font-size: 0.78rem; }
+}
+
 /* ── Form inputs ── */
 .erp-input {
   width: 100%;

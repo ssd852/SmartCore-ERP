@@ -25,7 +25,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 520
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       <div
-        className="relative w-full rounded-3xl shadow-2xl overflow-hidden"
+        className="relative w-[95vw] rounded-3xl shadow-2xl overflow-hidden"
         style={{
           maxWidth,
           background: 'rgba(15,23,42,0.97)',
@@ -37,18 +37,18 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 520
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/6">
-          <h2 className="text-base font-bold text-slate-100">{title}</h2>
+        <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-white/6">
+          <h2 className="text-sm md:text-base font-bold text-slate-100 truncate pe-4">{title}</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/8 transition-all duration-200"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 hover:text-slate-200 hover:bg-white/8 transition-all duration-200 flex-shrink-0"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Body */}
-        <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">
+        <div className="px-4 md:px-6 py-4 md:py-5 max-h-[80vh] overflow-y-auto">
           {children}
         </div>
       </div>
