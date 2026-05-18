@@ -66,7 +66,7 @@ export default function Topbar({ onMenuClick }) {
 
   return (
     <header
-      className="flex items-center justify-between h-16 px-5"
+      className="flex items-center justify-between h-14 md:h-16 px-3 md:px-5"
       style={{
         background: 'rgba(11,17,32,0.85)',
         backdropFilter: 'blur(20px)',
@@ -76,12 +76,12 @@ export default function Topbar({ onMenuClick }) {
       }}
     >
       {/* ── Left/Start: Sidebar toggle + Breadcrumb ── */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 min-w-0">
         {/* Hamburger — only on real mobile (hidden on md+) */}
         {onMenuClick && (
           <button
             onClick={onMenuClick}
-            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-white/8 transition-all duration-200"
+            className="md:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-200 hover:bg-white/8 transition-all duration-200 shrink-0"
             title="Menu"
           >
             <Menu size={18} />
@@ -100,11 +100,11 @@ export default function Topbar({ onMenuClick }) {
         </button>
 
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-1.5 text-sm">
+        <nav className="flex items-center gap-1 md:gap-1.5 text-xs md:text-sm min-w-0 overflow-hidden">
           {breadcrumbs.map((key, i) => (
             <React.Fragment key={key}>
-              {i > 0 && <span className="text-slate-700 text-xs">{lang === 'ar' ? '←' : '→'}</span>}
-              <span className={i === breadcrumbs.length - 1 ? 'text-slate-200 font-semibold' : 'text-slate-500'}>
+              {i > 0 && <span className="text-slate-700 text-xs shrink-0">{lang === 'ar' ? '←' : '→'}</span>}
+              <span className={`${i === breadcrumbs.length - 1 ? 'text-slate-200 font-semibold truncate' : 'text-slate-500 hidden sm:inline'}`}>
                 {t(key)}
               </span>
             </React.Fragment>
@@ -158,7 +158,7 @@ export default function Topbar({ onMenuClick }) {
           {/* Notification dropdown */}
           {notifOpen && (
             <div
-              className="absolute top-10 end-0 w-80 rounded-2xl shadow-2xl overflow-hidden z-50"
+              className="absolute top-10 end-0 w-[calc(100vw-2rem)] max-w-xs sm:w-80 rounded-2xl shadow-2xl overflow-hidden z-50"
               style={{
                 background: 'rgba(15,23,42,0.95)',
                 backdropFilter: 'blur(24px)',

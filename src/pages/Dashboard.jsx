@@ -186,11 +186,11 @@ export default function Dashboard() {
   const profitIcon   = netProfit >= 0 ? TrendingUp : TrendingDown;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 md:gap-6">
 
       {/* ── Welcome Banner ── */}
       <div
-        className="glass-strong rounded-2xl p-6 relative overflow-hidden"
+        className="glass-strong rounded-2xl p-4 md:p-6 relative overflow-hidden"
         style={{ borderTop: '2px solid rgba(99,102,241,0.4)' }}
       >
         <div
@@ -200,16 +200,16 @@ export default function Dashboard() {
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-2">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', boxShadow: '0 4px 16px rgba(99,102,241,0.4)' }}
             >
-              <BarChart3 size={20} color="white" />
+              <BarChart3 size={18} color="white" />
             </div>
-            <div>
-              <h1 className="text-lg font-black text-slate-100">
+            <div className="min-w-0">
+              <h1 className="text-base md:text-lg font-black text-slate-100 truncate">
                 {lang === 'ar' ? `👋 مرحباً، ${roleLabel}` : `👋 Welcome, ${roleLabel}`}
               </h1>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 hidden sm:block">
                 {lang === 'ar' ? 'هذا ملخص أداء المؤسسة — بيانات حية من قاعدة البيانات' : "Live enterprise performance summary from the database"}
               </p>
             </div>
@@ -217,21 +217,21 @@ export default function Dashboard() {
         </div>
         {/* Live badge */}
         {!isLoading && (
-          <div className="absolute top-4 end-4 flex items-center gap-1.5">
+          <div className="absolute top-3 end-3 md:top-4 md:end-4 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] text-emerald-500 font-bold tracking-widest uppercase">Live</span>
           </div>
         )}
         {isLoading && (
-          <div className="absolute top-4 end-4 flex items-center gap-1.5">
+          <div className="absolute top-3 end-3 md:top-4 md:end-4 flex items-center gap-1.5">
             <Loader2 size={13} className="text-slate-500 animate-spin" />
             <span className="text-[10px] text-slate-500 font-bold tracking-widest uppercase">Loading</span>
           </div>
         )}
       </div>
 
-      {/* ── KPI Stats — 6 cards in 2 rows of 3 ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* ── KPI Stats — 6 cards: 1 col on xs, 2 on sm, 3 on lg ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
         {isLoading ? (
           <>
             <SkeletonCard /><SkeletonCard /><SkeletonCard />
@@ -305,7 +305,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Alerts ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         {/* Unpaid invoices */}
         <div className="glass rounded-2xl p-4 flex items-center gap-4 border border-rose-500/15">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-rose-500/15">
@@ -344,7 +344,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Quick Stats Row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {[
           { icon: FileText,  label: lang === 'ar' ? 'فواتير المبيعات' : 'Sales Invoices', val: salesInvoiceCount, color: '#10b981' },
           { icon: Package,   label: lang === 'ar' ? 'أصناف المخزون'  : 'Inventory Items', val: inventoryCount,   color: '#f59e0b' },
@@ -368,7 +368,7 @@ export default function Dashboard() {
 
       {/* ── Recent Invoices Table ── */}
       <div className="glass-strong rounded-2xl overflow-hidden" style={{ borderTop: '2px solid rgba(16,185,129,0.35)' }}>
-        <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+        <div className="px-4 md:px-5 py-3 md:py-4 border-b border-white/5 flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-200">
             {lang === 'ar' ? 'آخر فواتير المبيعات' : 'Recent Sales Invoices'}
           </h2>

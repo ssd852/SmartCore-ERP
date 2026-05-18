@@ -44,7 +44,7 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
 
   return (
     <form onSubmit={e => { e.preventDefault(); onSave({ ...form, net_salary }); }} className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-slate-400 mb-1.5">{t('emp_id')}</label>
           <select className="erp-select" value={form.emp_id} onChange={e => set('emp_id', e.target.value)} required disabled={isSaving || loadingEmployees}>
@@ -59,7 +59,7 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
           <input className="erp-input text-left" dir="ltr" type="month" value={form.month_year} onChange={e => set('month_year', e.target.value)} required disabled={isSaving} />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-slate-400 mb-1.5">{t('basic_salary')}</label>
           <input className="erp-input text-left" dir="ltr" type="number" step="any" value={form.basic_salary} onChange={e => set('basic_salary', e.target.value)} required disabled={isSaving} />

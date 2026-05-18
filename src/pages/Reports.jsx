@@ -102,19 +102,19 @@ export default function Reports() {
   return (
     <div className="flex flex-col gap-6">
       {/* ── Header ── */}
-      <div className="glass-strong rounded-2xl p-5 flex items-center gap-4" style={{ borderTop: '2px solid rgba(168,85,247,0.4)' }}>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(168,85,247,0.15)' }}>
-          <BarChart3 size={20} className="text-purple-400" />
+      <div className="glass-strong rounded-2xl p-4 md:p-5 flex items-center gap-3 md:gap-4" style={{ borderTop: '2px solid rgba(168,85,247,0.4)' }}>
+        <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'rgba(168,85,247,0.15)' }}>
+          <BarChart3 size={18} className="text-purple-400" />
         </div>
-        <div className="flex-1">
-          <h1 className="text-base font-black text-slate-100">{t('reports')}</h1>
-          <p className="text-xs text-slate-500">ملخص مالي شامل للمؤسسة — بيانات حية من قاعدة البيانات</p>
+        <div className="flex-1 min-w-0">
+          <h1 className="text-sm md:text-base font-black text-slate-100">{t('reports')}</h1>
+          <p className="text-xs text-slate-500 truncate">ملخص مالي شامل للمؤسسة — بيانات حية من قاعدة البيانات</p>
         </div>
-        {isLoading && <Loader2 size={18} className="text-purple-400 animate-spin" />}
+        {isLoading && <Loader2 size={18} className="text-purple-400 animate-spin shrink-0" />}
       </div>
 
       {/* ── KPI Cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatCard title="إجمالي المبيعات"    value={fmt(totalSales)}     icon={TrendingUp} trend="up"      accentColor="#10b981" />
         <StatCard title="إجمالي المشتريات"  value={fmt(totalPurchases)} icon={Package}    trend="neutral"  accentColor="#f59e0b" />
         <StatCard title="مصروفات الرواتب"   value={fmt(totalPayroll)}   icon={DollarSign} trend="down"     accentColor="#f43f5e" />
@@ -187,7 +187,7 @@ export default function Reports() {
       </div>
 
       {/* ── Quick count cards ── */}
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
         {[
           { label: 'الموردون',       val: counts.suppliers, color: '#10b981' },
           { label: 'العملاء',         val: counts.customers,  color: '#0ea5e9' },

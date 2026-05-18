@@ -56,7 +56,7 @@ function SalesInvoiceForm({ row, onClose, onSave, isSaving }) {
         <label className="block text-xs font-bold text-slate-400 mb-1.5">{t('date')}</label>
         <input className="erp-input text-left" dir="ltr" type="date" value={form.invoice_date} onChange={e => set('invoice_date', e.target.value)} required disabled={isSaving} />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-bold text-slate-400 mb-1.5">إجمالي الفاتورة</label>
           <input className="erp-input text-left" dir="ltr" type="number" step="any" value={form.amount} onChange={e => set('amount', e.target.value)} required disabled={isSaving} />
