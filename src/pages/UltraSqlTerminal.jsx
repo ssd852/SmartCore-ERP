@@ -186,7 +186,8 @@ function ResultsPane({ result, isLoading, onExport, onClear }) {
         {/* TIER 2 — DATA TABLE (ALWAYS wins over success message when data exists) */}
         {hasData && (
           <div className="rounded-lg border border-white/10 overflow-hidden">
-            <table className="w-full border-collapse text-xs font-mono">
+            <div className="w-full overflow-x-auto pb-4 shadow-sm border border-slate-800 rounded-lg">
+              <table className="w-full border-collapse text-xs font-mono">
               <thead className="sticky top-0 z-10">
                 <tr style={{ background: 'rgba(15,23,42,0.95)', backdropFilter: 'blur(12px)' }}>
                   <th className="px-4 py-3 text-left text-[10px] font-bold text-slate-500 border-b border-white/10 w-8">#</th>
@@ -213,7 +214,8 @@ function ResultsPane({ result, isLoading, onExport, onClear }) {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           </div>
         )}
 

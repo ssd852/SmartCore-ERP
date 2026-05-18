@@ -230,8 +230,8 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* ── KPI Stats — 6 cards: 1 col on xs, 2 on sm, 3 on lg ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+      {/* ── KPI Stats ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {isLoading ? (
           <>
             <SkeletonCard /><SkeletonCard /><SkeletonCard />
@@ -344,7 +344,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Quick Stats Row ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { icon: FileText,  label: lang === 'ar' ? 'فواتير المبيعات' : 'Sales Invoices', val: salesInvoiceCount, color: '#10b981' },
           { icon: Package,   label: lang === 'ar' ? 'أصناف المخزون'  : 'Inventory Items', val: inventoryCount,   color: '#f59e0b' },
@@ -394,7 +394,8 @@ export default function Dashboard() {
               <p className="text-xs font-medium">{lang === 'ar' ? 'لا توجد فواتير بعد' : 'No invoices yet'}</p>
             </div>
           ) : (
-            <table className="erp-table">
+            <div className="w-full overflow-x-auto pb-4 shadow-sm border border-slate-800 rounded-lg">
+              <table className="erp-table">
               <thead>
                 <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
                   {[
@@ -429,7 +430,8 @@ export default function Dashboard() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </div>
       </div>

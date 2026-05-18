@@ -162,7 +162,8 @@ export default function Reports() {
               : payrollRows.length === 0
                 ? <p className="text-xs text-slate-600 p-5 text-center">لا توجد بيانات رواتب</p>
                 : (
-                  <table className="erp-table">
+                  <div className="w-full overflow-x-auto pb-4 shadow-sm border border-slate-800 rounded-lg">
+                    <table className="erp-table">
                     <thead>
                       <tr style={{ background: 'rgba(255,255,255,0.02)' }}>
                         {['رقم الموظف', 'الشهر', 'صافي الراتب'].map(h => (
@@ -179,7 +180,8 @@ export default function Reports() {
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 )
             }
           </div>

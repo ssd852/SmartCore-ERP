@@ -94,8 +94,8 @@ export default function MainLayout() {
 
               <main
                 key={location.pathname}
-                className="flex-1 overflow-y-auto page-enter"
-                style={{ background: '#0b1120', padding: 'clamp(0.75rem, 3vw, 1.5rem)' }}
+                className="flex-1 overflow-y-auto page-enter w-full p-4 md:p-8"
+                style={{ background: '#0b1120' }}
               >
                 <Outlet />
               </main>

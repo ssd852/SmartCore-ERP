@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import { supabase, supabaseReady } from '../../config/supabaseClient';
 import { getAuthUserId } from '../../utils/getAuthUserId';
 import { printPayrollSlip } from '../../utils/printDocument';
+import { formatCurrency } from '../../utils/currencyFormatter';
 
 function PayrollForm({ row, onClose, onSave, isSaving }) {
   const { t } = useTranslation();
@@ -40,7 +41,7 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
     fetchEmployees();
   }, []);
 
-  const net_salary = (Number(form.basic_salary) - Number(form.deductions)) || 0;
+  const net_salary = (Number(form.basic_salary) || 0) - (Number(form.deductions) || 0);
 
   return (
     <form onSubmit={e => { e.preventDefault(); onSave({ ...form, net_salary }); }} className="flex flex-col gap-4">
@@ -70,7 +71,7 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
         </div>
       </div>
       <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-between" dir="ltr">
-        <span className="font-mono text-lg font-black text-emerald-400 text-left">{net_salary.toLocaleString()} ر.س</span>
+        <span className="font-mono text-lg font-black text-emerald-400 text-left">{formatCurrency(net_salary)}</span>
         <span className="text-sm font-bold text-emerald-400 text-right">صافي الراتب:</span>
       </div>
       <div className="flex gap-3 pt-2">

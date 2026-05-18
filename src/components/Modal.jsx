@@ -25,9 +25,8 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 520
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       <div
-        className="relative w-[95vw] rounded-3xl shadow-2xl overflow-hidden"
+        className="relative w-[95%] max-w-2xl mx-auto rounded-3xl shadow-2xl overflow-hidden"
         style={{
-          maxWidth,
           background: 'rgba(15,23,42,0.97)',
           border: '1px solid rgba(255,255,255,0.1)',
           backdropFilter: 'blur(24px)',
