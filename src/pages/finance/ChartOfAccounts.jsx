@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { FileText, Loader2 } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
@@ -49,6 +50,7 @@ function AccountForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function ChartOfAccounts() {
+  const { printDocument } = useApp();
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -127,7 +129,8 @@ export default function ChartOfAccounts() {
 
   return (
     <div className="relative min-h-screen">
-      <CrudTable 
+      <CrudTable
+        onPrint={(row) => printDocument('chart_of_accounts', row)}
         title={t('chart_of_accounts')} 
         icon={FileText} 
         columns={columns} 
@@ -137,7 +140,7 @@ export default function ChartOfAccounts() {
         addForm={form} 
         addTitle={t('chart_of_accounts') + ' — ' + t('add')} 
         editTitle={t('chart_of_accounts') + ' — ' + t('edit')} 
-        accentColor="#6366f1" 
+        accentColor="#6366f1"
       />
     </div>
   );

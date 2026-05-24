@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { FileText, Loader2 } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
@@ -84,6 +85,7 @@ function SalesInvoiceForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function SalesInvoices() {
+  const { printDocument } = useApp();
   const { t } = useTranslation();
   const addToast = useToast();
   

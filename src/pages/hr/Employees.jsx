@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { UserCheck, Loader2 } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
@@ -54,6 +55,7 @@ function EmployeeForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function Employees() {
+  const { printDocument } = useApp();
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -133,7 +135,8 @@ export default function Employees() {
 
   return (
     <div className="relative min-h-screen">
-      <CrudTable 
+      <CrudTable
+        onPrint={(row) => printDocument('employees', row)}
         title={t('employees')} 
         icon={UserCheck} 
         columns={columns} 
@@ -143,7 +146,7 @@ export default function Employees() {
         addForm={form} 
         addTitle={t('employees') + ' — ' + t('add')} 
         editTitle={t('employees') + ' — ' + t('edit')} 
-        accentColor="#4f46e5" 
+        accentColor="#4f46e5"
       />
     </div>
   );

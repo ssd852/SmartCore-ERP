@@ -222,7 +222,24 @@ body.lang-en {
    Hides all chrome, resets backgrounds to white
    so window.print() produces clean A4 output.
 ──────────────────────────────────────────── */
+.print-document-layout {
+  display: none;
+}
+
 @media print {
+  /* ── When printing a single document, hide the router wrapper ── */
+  body.print-single-mode #root > div:not(.print-document-layout) {
+    display: none !important;
+  }
+  
+  body.print-single-mode .print-document-layout {
+    display: block !important;
+    width: 100% !important;
+    background: white;
+    color: black;
+    direction: rtl;
+  }
+
   /* ── Hide all UI chrome ── */
   aside,
   nav,
@@ -297,7 +314,6 @@ body.lang-en {
     backdrop-filter: none !important;
   }
 
-  /* ── Table styling ── */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -305,7 +321,7 @@ body.lang-en {
   }
   thead { display: table-header-group; }
   tfoot { display: table-footer-group; }
-  tr { page-break-inside: avoid; page-break-after: auto; }
+  tr { page-break-inside: avoid !important; page-break-after: auto; }
 
   th {
     background: #f1f5f9 !important;

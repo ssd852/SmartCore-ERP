@@ -9,6 +9,26 @@ export function AppProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('erp-theme') || 'dark');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // Printing state for individual document layout
+  const [printDoc, setPrintDocState] = useState(null);
+
+  const printDocument = useCallback((type, data) => {
+    setPrintDocState({ type, data });
+    document.body.classList.add('print-single-mode');
+    setTimeout(() => {
+      window.print();
+    }, 200);
+  }, []);
+
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      setPrintDocState(null);
+      document.body.classList.remove('print-single-mode');
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, []);
 
   // Apply lang to document
   const setLang = useCallback((newLang) => {
@@ -52,6 +72,7 @@ export function AppProvider({ children }) {
       theme, setTheme, toggleTheme,
       sidebarOpen, setSidebarOpen,
       sidebarCollapsed, setSidebarCollapsed,
+      printDoc, printDocument,
     }}>
       {children}
     </AppContext.Provider>

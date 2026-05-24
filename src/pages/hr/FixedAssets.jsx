@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { Building, Loader2 } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
@@ -50,6 +51,7 @@ function FixedAssetForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function FixedAssets() {
+  const { printDocument } = useApp();
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -129,7 +131,8 @@ export default function FixedAssets() {
 
   return (
     <div className="relative min-h-screen">
-      <CrudTable 
+      <CrudTable
+        onPrint={(row) => printDocument('fixed_assets', row)}
         title={t('fixed_assets')} 
         icon={Building} 
         columns={columns} 
@@ -139,7 +142,7 @@ export default function FixedAssets() {
         addForm={form} 
         addTitle={t('fixed_assets') + ' — ' + t('add')} 
         editTitle={t('fixed_assets') + ' — ' + t('edit')} 
-        accentColor="#9333ea" 
+        accentColor="#9333ea"
       />
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { FileText, Loader2 } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
@@ -50,6 +51,7 @@ function JournalEntryForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function JournalEntries() {
+  const { printDocument } = useApp();
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -129,7 +131,8 @@ export default function JournalEntries() {
 
   return (
     <div className="relative min-h-screen">
-      <CrudTable 
+      <CrudTable
+        onPrint={(row) => printDocument('journal_entries', row)}
         title={t('journal_entries')} 
         icon={FileText} 
         columns={columns} 
@@ -139,7 +142,7 @@ export default function JournalEntries() {
         addForm={form} 
         addTitle={t('journal_entries') + ' — ' + t('add')} 
         editTitle={t('journal_entries') + ' — ' + t('edit')} 
-        accentColor="#6366f1" 
+        accentColor="#6366f1"
       />
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { Users, Loader2 } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
@@ -50,6 +51,7 @@ function CustomerForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function Customers() {
+  const { printDocument } = useApp();
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -129,7 +131,8 @@ export default function Customers() {
 
   return (
     <div className="relative min-h-screen">
-      <CrudTable 
+      <CrudTable
+        onPrint={(row) => printDocument('customers', row)}
         title={t('customers')} 
         icon={Users} 
         columns={columns} 
@@ -139,7 +142,7 @@ export default function Customers() {
         addForm={form} 
         addTitle={t('customers') + ' — ' + t('add')} 
         editTitle={t('customers') + ' — ' + t('edit')} 
-        accentColor="#0ea5e9" 
+        accentColor="#0ea5e9"
       />
     </div>
   );

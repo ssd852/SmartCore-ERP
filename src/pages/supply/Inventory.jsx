@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { Package, Loader2 } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
@@ -55,6 +56,7 @@ function InventoryForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function Inventory() {
+  const { printDocument } = useApp();
   const { t } = useTranslation();
   const addToast = useToast();
   

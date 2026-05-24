@@ -6,6 +6,7 @@ import { AppProvider } from './context/AppContext';
 import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layout/MainLayout';
+import PrintDocumentLayout from './components/PrintDocumentLayout';
 
 // Pages
 import Login            from './pages/Login';
@@ -55,6 +56,7 @@ export default function App() {
     <ErrorBoundary>
       <I18nextProvider i18n={i18n}>
         <AppProvider>
+          <PrintDocumentLayout />
           <ToastProvider>
             <Router>
               <Routes>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
 import { Truck, Loader2 } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
@@ -54,6 +55,7 @@ function SupplierForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function Suppliers() {
+  const { printDocument } = useApp();
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -133,7 +135,8 @@ export default function Suppliers() {
 
   return (
     <div className="relative min-h-screen">
-      <CrudTable 
+      <CrudTable
+        onPrint={(row) => printDocument('suppliers', row)}
         title={t('suppliers')} 
         icon={Truck} 
         columns={columns} 
@@ -143,7 +146,7 @@ export default function Suppliers() {
         addForm={form} 
         addTitle={t('suppliers') + ' — ' + t('add')} 
         editTitle={t('suppliers') + ' — ' + t('edit')} 
-        accentColor="#10b981" 
+        accentColor="#10b981"
       />
     </div>
   );
