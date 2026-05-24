@@ -145,6 +145,23 @@ export default function CrudTable({
               <span className="hidden sm:inline">{addLabel || t('add')}</span>
             </button>
           )}
+
+          {/* Print button — always visible, hides itself when printing */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="no-print flex items-center gap-1.5 px-3 md:px-4 py-2.5 rounded-xl text-xs font-bold text-slate-300 flex-shrink-0 transition-all duration-200 hover:scale-105 hover:text-white active:scale-100"
+            style={{
+              background: 'rgba(30,41,59,0.6)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(71,85,105,0.5)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            }}
+            title="طباعة / تصدير PDF"
+          >
+            <Printer size={14} />
+            <span className="hidden sm:inline">طباعة</span>
+          </button>
         </div>
       </div>
 

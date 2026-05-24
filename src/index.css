@@ -216,3 +216,136 @@ body.lang-en {
   box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
 }
 .erp-select option { background: #1e293b; }
+
+/* ────────────────────────────────────────────
+   PRINT / PDF MEDIA QUERY
+   Hides all chrome, resets backgrounds to white
+   so window.print() produces clean A4 output.
+──────────────────────────────────────────── */
+@media print {
+  /* ── Hide all UI chrome ── */
+  aside,
+  nav,
+  header,
+  .sidebar,
+  .top-nav,
+  [class*="Topbar"],
+  [class*="Sidebar"],
+  .no-print {
+    display: none !important;
+  }
+
+  /* ── Hide interactive controls ── */
+  button,
+  input[type="search"],
+  .search-bar-wrapper,
+  .action-icons,
+  [class*="pagination"],
+  [class*="modal"],
+  [class*="Modal"] {
+    display: none !important;
+  }
+
+  /* ── Reset page & body ── */
+  @page {
+    size: A4;
+    margin: 16mm 12mm;
+  }
+
+  html, body, #root {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Full-width layout ── */
+  .main-content-container,
+  main,
+  [class*="content"] {
+    background: white !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* ── Grid: stack columns on print ── */
+  .grid {
+    display: block !important;
+  }
+  .grid > * {
+    break-inside: avoid;
+    margin-bottom: 12pt;
+    page-break-inside: avoid;
+  }
+
+  /* ── Glass cards → plain boxes ── */
+  .glass,
+  .glass-strong,
+  [class*="glass"] {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* ── Table styling ── */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto;
+  }
+  thead { display: table-header-group; }
+  tfoot { display: table-footer-group; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+
+  th {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 6pt 8pt !important;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  td {
+    color: #1e293b !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 5pt 8pt !important;
+    font-size: 10pt;
+  }
+
+  /* ── Override colored text for readability ── */
+  .text-amber-400,
+  .text-emerald-400,
+  .text-cyan-400,
+  .text-purple-400,
+  .text-rose-400,
+  .text-indigo-400,
+  .text-sky-400 {
+    color: #0f172a !important;
+  }
+
+  /* ── Stat cards → clean layout ── */
+  [class*="StatCard"],
+  .stat-card {
+    border: 1px solid #cbd5e1 !important;
+    background: white !important;
+    break-inside: avoid;
+  }
+
+  /* ── Hide progress bars / decorative elements ── */
+  canvas,
+  svg[class*="chart"] {
+    display: none !important;
+  }
+}
+

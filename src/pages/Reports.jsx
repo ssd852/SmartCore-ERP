@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BarChart3, TrendingUp, DollarSign, Users, Package, Loader2 } from 'lucide-react';
+import { BarChart3, TrendingUp, DollarSign, Users, Package, Loader2, Printer } from 'lucide-react';
 import { formatCurrency } from '../utils/currencyFormatter';
 import StatCard from '../components/StatCard';
 import { supabase, supabaseReady } from '../config/supabaseClient';
@@ -111,6 +111,22 @@ export default function Reports() {
           <p className="text-xs text-slate-500 truncate">ملخص مالي شامل للمؤسسة — بيانات حية من قاعدة البيانات</p>
         </div>
         {isLoading && <Loader2 size={18} className="text-purple-400 animate-spin shrink-0" />}
+        {/* Print button */}
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className="no-print flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-300 flex-shrink-0 transition-all duration-200 hover:scale-105 hover:text-white active:scale-100"
+          style={{
+            background: 'rgba(30,41,59,0.6)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(71,85,105,0.5)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+          }}
+          title="طباعة التقرير"
+        >
+          <Printer size={14} />
+          <span className="hidden sm:inline">طباعة</span>
+        </button>
       </div>
 
       {/* ── KPI Cards ── */}
