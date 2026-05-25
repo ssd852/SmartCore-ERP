@@ -447,6 +447,56 @@ export default function Employees() {
     }
   };
 
+  const handleRegisterBiometric = async (emp) => {
+    try {
+      if (!window.PublicKeyCredential) throw new Error('WebAuthn غير مدعوم في هذا المتصفح');
+      
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
+      
+      const credential = await navigator.credentials.create({
+        publicKey: {
+          challenge: challenge,
+          rp: { name: 'SmartCore ERP', id: window.location.hostname },
+          user: {
+            id: new Uint8Array([...String(emp.emp_id)].map(c => c.charCodeAt(0))),
+            name: String(emp.emp_id),
+            displayName: emp.name
+          },
+          pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+          authenticatorSelection: { userVerification: 'required' },
+          timeout: 60000,
+          attestation: 'none'
+        }
+      });
+      
+      if (!credential) throw new Error('تم إلغاء عملية ربط البصمة');
+      
+      const payload = {
+        tenant_id: tenantId,
+        employee_id: emp.emp_id,
+        credential_id: btoa(String.fromCharCode.apply(null, new Uint8Array(credential.rawId))),
+        public_key: 'webauthn-key'
+      };
+      
+      const { error } = await supabase.from('employee_biometrics').insert([payload]);
+      if (error) {
+        if (error.code === '42P01') {
+          throw new Error('يرجى إنشاء جدول employee_biometrics في قاعدة البيانات أولاً');
+        }
+        if (error.code === '23505') {
+          throw new Error('هذا الموظف لديه بصمة مربوطة مسبقاً');
+        }
+        throw error;
+      }
+      
+      addToast('تم ربط بصمة جهازك بنجاح! يمكنك الآن تسجيل الدوام عبر البصمة.', 'success');
+    } catch (err) {
+      console.error(err);
+      addToast(err.message || 'فشلت عملية الربط', 'error');
+    }
+  };
+
   // Payroll Computed Data for Grid
   const payrollGridData = useMemo(() => {
     const currentMonth = new Date().toISOString().slice(0, 7);
@@ -535,13 +585,21 @@ export default function Employees() {
                 { key: 'position',   label: t('position') },
                 { key: 'department', label: t('department') },
                 { key: 'salary',     label: t('salary') },
-                { key: 'actions', label: 'الإجازات', render: (val, row) => (
-                    <button 
-                      onClick={() => { setSelectedEmpForLeave(row); setShowLeaveModal(true); }}
-                      className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-lg font-bold text-xs hover:bg-indigo-500/40"
-                    >
-                       إدارة الإجازات
-                    </button>
+                { key: 'actions', label: 'الإجراءات', render: (val, row) => (
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => { setSelectedEmpForLeave(row); setShowLeaveModal(true); }}
+                        className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-lg font-bold text-xs hover:bg-indigo-500/40 transition-colors"
+                      >
+                         الإجازات
+                      </button>
+                      <button 
+                        onClick={() => handleRegisterBiometric(row)}
+                        className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg font-bold text-xs hover:bg-emerald-500/40 transition-colors"
+                      >
+                         ربط البصمة
+                      </button>
+                    </div>
                  )},
               ]} 
               data={employees} 

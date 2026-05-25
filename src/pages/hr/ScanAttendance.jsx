@@ -55,30 +55,6 @@ export default function ScanAttendance() {
       return;
     }
 
-    try {
-      // Trigger Native Biometric Prompt
-      if (!window.PublicKeyCredential) {
-        throw new Error('WebAuthn not supported');
-      }
-      
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge: new Uint8Array([1, 2, 3, 4]), // Secure transaction challenge
-          rpId: window.location.hostname,
-          userVerification: "required" // Forces biometrics (Fingerprint/Face)
-        }
-      });
-      
-      if (!credential) {
-         throw new Error('Biometric check failed or cancelled');
-      }
-    } catch (bioError) {
-      console.error('Biometric Authentication Error:', bioError);
-      setStatus('error');
-      setMessage('فشلت عملية التحقق من الهوية! يجب استخدام بصمة الإصبع الحقيقية للجهاز');
-      return;
-    }
-
     setStatus('loading');
     setMessage('');
 
@@ -93,12 +69,50 @@ export default function ScanAttendance() {
         .single();
 
       if (empError || !employee) {
-        setStatus('error');
-        setMessage('الرقم الوظيفي غير موجود في نظام شركتك');
-        return;
+        throw new Error('الرقم الوظيفي غير موجود في نظام شركتك');
       }
       
       const targetGlobalEmpId = employee.emp_id;
+
+      // 3. Biometric Verification Check
+      const { data: bioData, error: bioError } = await supabase
+        .from('employee_biometrics')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('employee_id', targetGlobalEmpId)
+        .single();
+        
+      if (bioError || !bioData) {
+        throw new Error('يرجى ربط بصمة الجهاز من حساب الموظف أولاً لتفعيل الدخول السريع.');
+      }
+      
+      try {
+        if (!window.PublicKeyCredential) {
+          throw new Error('WebAuthn not supported');
+        }
+        
+        const rawId = Uint8Array.from(atob(bioData.credential_id), c => c.charCodeAt(0));
+        
+        const credential = await navigator.credentials.get({
+          publicKey: {
+            challenge: new Uint8Array(32),
+            allowCredentials: [{
+              id: rawId,
+              type: 'public-key'
+            }],
+            rpId: window.location.hostname,
+            userVerification: "required"
+          }
+        });
+        
+        if (!credential) {
+           throw new Error('Biometric cancelled');
+        }
+      } catch (bioEx) {
+        console.error('Biometric Auth Error:', bioEx);
+        throw new Error('فشلت عملية التحقق من الهوية! يجب استخدام بصمة الإصبع الحقيقية للجهاز');
+      }
+
       const todayStr = new Date().toISOString().split('T')[0];
 
       // Find if an attendance log already exists for today
