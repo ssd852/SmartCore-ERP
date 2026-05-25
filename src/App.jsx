@@ -34,6 +34,7 @@ import Checks           from './pages/finance/Checks';
 import FixedAssets      from './pages/hr/FixedAssets';
 import Employees        from './pages/hr/Employees';
 import Payroll          from './pages/hr/Payroll';
+import ScanAttendance   from './pages/hr/ScanAttendance';
 
 // Error Boundary
 class ErrorBoundary extends Component {
@@ -65,6 +66,7 @@ export default function App() {
               <Routes>
                 {/* Public */}
                 <Route path="/login" element={<Login />} />
+                <Route path="/scan-attendance" element={<ScanAttendance />} />
 
                 {/* Protected — uses MainLayout with sidebar/topbar */}
                 <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
