@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext';
 import {
   LayoutDashboard, Package, ShoppingCart, Truck, FileText,
   Users, BookOpen, Building, UserCheck,
-  DollarSign, BarChart3, ChevronDown, ChevronUp, Landmark, CreditCard, Terminal, HardDrive
+  DollarSign, BarChart3, ChevronDown, ChevronUp, Landmark, CreditCard, Terminal, HardDrive, Cpu
 } from 'lucide-react';
 
 const menuGroups = [
@@ -84,7 +84,7 @@ const groupBg = {
 
 export default function Sidebar() {
   const { t } = useTranslation();
-  const { lang, sidebarCollapsed } = useApp();
+  const { lang, sidebarCollapsed, isDevMode, setIsDevMode } = useApp();
   const location = useLocation();
   
   const userRole = localStorage.getItem('userRole') || 'Admin';
@@ -228,10 +228,23 @@ export default function Sidebar() {
       {/* ── Footer ── */}
       {!sidebarCollapsed && (
         <div
-          className="px-4 py-3 text-center shrink-0"
+          className="px-4 py-3 shrink-0 flex flex-col gap-2"
           style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}
         >
-          <p className="text-[10px] text-slate-700 font-medium">© 2026 SmartCore ERP</p>
+          <button 
+            onClick={() => setIsDevMode(!isDevMode)}
+            className="flex items-center justify-between px-2 py-1.5 rounded-lg opacity-40 hover:opacity-100 transition-opacity"
+            title="وضع المطور / الفحص البرمجي"
+          >
+            <div className="flex items-center gap-1.5">
+              <Cpu size={12} className={isDevMode ? 'text-indigo-400' : 'text-slate-500'} />
+              <span className={`text-[10px] font-bold ${isDevMode ? 'text-indigo-400' : 'text-slate-500'}`}>وضع المطور</span>
+            </div>
+            <div className={`w-6 h-3 rounded-full flex items-center p-0.5 transition-colors ${isDevMode ? 'bg-indigo-500/30' : 'bg-white/10'}`}>
+              <div className={`w-2 h-2 rounded-full transition-transform ${isDevMode ? 'bg-indigo-400 translate-x-[12px]' : 'bg-slate-400 translate-x-0'}`} />
+            </div>
+          </button>
+          <p className="text-[10px] text-slate-700 font-medium text-center mt-1">© 2026 SmartCore ERP</p>
         </div>
       )}
     </div>

@@ -11,6 +11,9 @@ export function AppProvider({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
+  // Developer Mode state
+  const [isDevMode, setIsDevModeState] = useState(() => localStorage.getItem('erp-dev-mode') === 'true');
+  
   // SaaS Tenant Profile state
   const [tenantProfile, setTenantProfile] = useState(null);
   
@@ -61,6 +64,12 @@ export function AppProvider({ children }) {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   }, [theme, setTheme]);
 
+  // Apply dev mode
+  const setIsDevMode = useCallback((val) => {
+    setIsDevModeState(val);
+    localStorage.setItem('erp-dev-mode', val);
+  }, []);
+
   // Apply initial values on mount and fetch tenant profile
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -104,6 +113,7 @@ export function AppProvider({ children }) {
       theme, setTheme, toggleTheme,
       sidebarOpen, setSidebarOpen,
       sidebarCollapsed, setSidebarCollapsed,
+      isDevMode, setIsDevMode,
       printDoc, printDocument,
       tenantProfile, setTenantProfile,
     }}>
