@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
-import { UserCheck, Loader2, Banknote, Clock, Printer, Plus, AlertCircle } from 'lucide-react';
+import { UserCheck, Loader2, Banknote, Clock, Printer, Plus, AlertCircle, Settings } from 'lucide-react';
 import CrudTable from '../../components/CrudTable';
 import Modal from '../../components/Modal';
 import { useToast } from '../../context/ToastContext';
@@ -89,6 +89,18 @@ export default function Employees() {
   const [selectedDayLog, setSelectedDayLog] = useState(null);
   const [tenantId, setTenantId] = useState('');
 
+  // Policy Settings State
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [settingsForm, setSettingsForm] = useState({
+    start_time: '08:00',
+    end_time: '16:00',
+    regular_hours: 8.0,
+    overtime_rate: 1.5,
+    grace_period_minutes: 15,
+    weekends: ['الجمعة', 'السبت'],
+    holidays: []
+  });
+
   // Widescreen Mode & Fetch Data
   useEffect(() => {
     setSidebarCollapsed(true);
@@ -131,6 +143,15 @@ export default function Employees() {
       }
       if (!settingsRes.error && settingsRes.data) {
         setSettings(settingsRes.data);
+        setSettingsForm({
+           start_time: settingsRes.data.start_time || '08:00',
+           end_time: settingsRes.data.end_time || '16:00',
+           regular_hours: Number(settingsRes.data.regular_hours) || 8.0,
+           overtime_rate: Number(settingsRes.data.overtime_rate) || 1.5,
+           grace_period_minutes: Number(settingsRes.data.grace_period_minutes) || 15,
+           weekends: settingsRes.data.weekends || ['الجمعة', 'السبت'],
+           holidays: settingsRes.data.holidays || []
+        });
       }
     } catch (err) {
       console.error('Fetch HR Data Error:', err);
@@ -249,11 +270,45 @@ export default function Employees() {
            setEmployees(p => [newEmp, ...p]);
         }
         else await fetchData();
-        addToast(t('save') + ' ✓', 'success');
+        addToast(t('success_saved'), 'success');
       }
-      onClose();
+      fetchData();
     } catch (err) {
-      addToast(err.message || 'Failed to save data', 'error');
+      addToast(err.message, 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      if (!supabaseReady) throw new Error('قاعدة البيانات غير متصلة');
+      const payload = {
+        tenant_id: tenantId,
+        start_time: settingsForm.start_time,
+        end_time: settingsForm.end_time,
+        regular_hours: Number(settingsForm.regular_hours),
+        overtime_rate: Number(settingsForm.overtime_rate),
+        grace_period_minutes: Number(settingsForm.grace_period_minutes),
+        weekends: settingsForm.weekends,
+        holidays: settingsForm.holidays
+      };
+
+      const { error } = await supabase.from('company_settings').upsert([payload]);
+      
+      if (error) {
+         if (error.code === '42P01') throw new Error('جدول company_settings غير موجود في قاعدة البيانات');
+         if (error.code === '42703') throw new Error('الأعمدة المضافة غير موجودة في قاعدة البيانات');
+         throw error;
+      }
+
+      addToast('تم حفظ سياسات الدوام بنجاح', 'success');
+      setShowSettingsModal(false);
+      fetchData(); // re-fetch settings context
+    } catch (err) {
+      addToast(err.message || 'حدث خطأ أثناء الحفظ', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -349,13 +404,22 @@ export default function Employees() {
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex p-1 bg-slate-900/50 rounded-xl border border-white/5 w-full md:w-auto overflow-x-auto hide-scrollbar">
-          {[
-            { id: 0, label: 'ملفات الموظفين', icon: UserCheck },
-            { id: 1, label: 'مسير الرواتب والسلف', icon: Banknote },
-            { id: 2, label: 'سجل الدوام والبصمة', icon: Clock },
-          ].map((tab) => (
+        {/* Header Options */}
+        <div className="flex items-center gap-4">
+           {activeTab === 2 && (
+             <button 
+                onClick={() => setShowSettingsModal(true)}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl border border-white/5 transition-colors flex items-center gap-2"
+             >
+               <Settings size={18} /> إعدادات سياسات الدوام
+             </button>
+           )}
+           <div className="flex bg-slate-800/50 p-1 rounded-xl border border-white/5 overflow-x-auto hide-scrollbar">
+              {[
+                { id: 0, label: 'سجل الموظفين', icon: UserCheck },
+                { id: 1, label: 'مسير الرواتب والسلف', icon: Banknote },
+                { id: 2, label: 'نظام الدوام (التقويم)', icon: Clock }
+              ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -369,6 +433,7 @@ export default function Employees() {
               <span>{tab.label}</span>
             </button>
           ))}
+           </div>
         </div>
       </div>
 
@@ -681,6 +746,73 @@ export default function Employees() {
           </div>
         )}
       </Modal>
+
+      {/* Admin Policy Settings Modal */}
+      <Modal isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} title="إعدادات قوانين الدوام والسياسات">
+        <form onSubmit={handleSaveSettings} className="flex flex-col gap-5">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5">وقت بدء الدوام الرسمي</label>
+              <input type="time" required value={settingsForm.start_time} onChange={e => setSettingsForm(p => ({...p, start_time: e.target.value}))} disabled={isSaving} className="erp-input text-left" dir="ltr" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5">وقت انتهاء الدوام</label>
+              <input type="time" required value={settingsForm.end_time} onChange={e => setSettingsForm(p => ({...p, end_time: e.target.value}))} disabled={isSaving} className="erp-input text-left" dir="ltr" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5">عدد الساعات الرسمية المطلوبة</label>
+              <input type="number" step="0.5" required value={settingsForm.regular_hours} onChange={e => setSettingsForm(p => ({...p, regular_hours: e.target.value}))} disabled={isSaving} className="erp-input text-left" dir="ltr" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5">مضاعف الأوفر تايم</label>
+              <input type="number" step="0.1" required value={settingsForm.overtime_rate} onChange={e => setSettingsForm(p => ({...p, overtime_rate: e.target.value}))} disabled={isSaving} className="erp-input text-left" dir="ltr" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-400 mb-1.5">فترة السماح للتأخير (بالدقائق)</label>
+            <input type="number" required value={settingsForm.grace_period_minutes} onChange={e => setSettingsForm(p => ({...p, grace_period_minutes: e.target.value}))} disabled={isSaving} className="erp-input text-left" dir="ltr" />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-400 mb-1.5">أيام العطل الأسبوعية الثابتة</label>
+            <div className="flex flex-wrap gap-2">
+               {['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'].map(day => {
+                  const isSelected = settingsForm.weekends.includes(day);
+                  return (
+                     <button
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                           setSettingsForm(p => ({
+                             ...p,
+                             weekends: isSelected ? p.weekends.filter(d => d !== day) : [...p.weekends, day]
+                           }));
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${isSelected ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+                     >
+                        {day}
+                     </button>
+                  );
+               })}
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button type="button" onClick={() => setShowSettingsModal(false)} disabled={isSaving} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-400 border border-white/10 hover:bg-white/5 transition-all">
+              إلغاء
+            </button>
+            <button type="submit" disabled={isSaving} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2">
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : null}
+              حفظ وتطبيق السياسات
+            </button>
+          </div>
+        </form>
+      </Modal>
+
     </div>
   );
 }
