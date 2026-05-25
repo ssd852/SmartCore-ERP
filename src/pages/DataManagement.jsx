@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck, Download, Trash2, AlertTriangle, Loader2,
-  Database, FileDown, CheckCircle2, XCircle, Server, Lock
+  Database, FileDown, CheckCircle2, XCircle, Server, Lock, Zap
 } from 'lucide-react';
 import { supabase, supabaseReady } from '../config/supabaseClient';
 import { exportMultipleToCSV } from '../utils/exportToCSV';
@@ -194,6 +194,116 @@ function BackupSection() {
             <><CheckCircle2 size={16} className="text-white" />تم التنزيل بنجاح!</>
           ) : (
             <><Download size={16} /><FileDown size={16} />تنزيل النسخة الاحتياطية الكاملة ({BACKUP_TABLES.length} جداول)</>
+          )}
+        </motion.button>
+      </div>
+    </SectionCard>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   SECTION A.2 — RECHARGE TENANT CREDITS
+═══════════════════════════════════════════ */
+function RechargeSection() {
+  const addToast = useToast();
+  const [tenantId, setTenantId] = useState('');
+  const [amount, setAmount] = useState(1000);
+  const [rechargeState, setRechargeState] = useState('idle');
+
+  const handleRecharge = async () => {
+    if (!tenantId.trim()) return addToast('يرجى إدخال معرف المشترك (Tenant ID)', 'error');
+    
+    setRechargeState('loading');
+    try {
+      if (!supabaseReady || !supabase) throw new Error('Supabase غير متصل');
+      
+      const { data, error } = await supabase.rpc('recharge_tenant_credits', {
+        p_tenant_id: tenantId,
+        p_amount: Number(amount)
+      });
+      
+      if (error) throw error;
+      if (data?.success === false) throw new Error(data.message);
+      
+      addToast(`✓ تم إضافة ${amount} نقطة بنجاح`, 'success');
+      setRechargeState('success');
+      setTimeout(() => setRechargeState('idle'), 3000);
+      setTenantId('');
+    } catch (err) {
+      console.error('Recharge Error:', err);
+      addToast(err.message || 'فشل الشحن', 'error');
+      setRechargeState('error');
+      setTimeout(() => setRechargeState('idle'), 3000);
+    }
+  };
+
+  return (
+    <SectionCard glowColor="#3b82f6">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 px-4 md:px-6 py-4 md:py-5 border-b border-white/5">
+        <div className="flex items-center gap-3 md:gap-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.25)' }}>
+            <Zap size={20} className="text-blue-400" />
+          </div>
+          <div>
+            <div className="flex flex-wrap items-center gap-2 mb-1">
+              <h2 className="text-sm md:text-base font-black text-slate-100">شحن نقاط المشتركين</h2>
+              <span className="text-xs bg-blue-500/15 text-blue-400 border border-blue-500/25 rounded-full px-2.5 py-0.5 font-bold">
+                Admin
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              إضافة نقاط (Credits) للمشتركين لاستخدام خدمات الذكاء الاصطناعي والواتساب
+            </p>
+          </div>
+        </div>
+        <StatusBadge state={rechargeState} />
+      </div>
+
+      <div className="px-4 md:px-6 py-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+          <div>
+            <label className="block text-xs font-bold text-slate-400 mb-1.5">معرف المشترك (Tenant ID)</label>
+            <input 
+              className="erp-input text-left font-mono text-sm" 
+              dir="ltr"
+              placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+              value={tenantId}
+              onChange={(e) => setTenantId(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-400 mb-1.5">كمية النقاط</label>
+            <input 
+              type="number" 
+              className="erp-input text-left font-mono text-sm" 
+              dir="ltr"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+            />
+          </div>
+        </div>
+        
+        <motion.button
+          onClick={handleRecharge}
+          disabled={rechargeState === 'loading'}
+          whileTap={{ scale: 0.97 }}
+          whileHover={{ scale: 1.02 }}
+          className="w-full flex items-center justify-center gap-3 py-3.5 rounded-xl font-bold text-sm transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+          style={{
+            background: rechargeState === 'loading'
+              ? 'rgba(30,41,59,0.8)'
+              : 'linear-gradient(135deg, #2563eb 0%, #3b82f6 100%)',
+            boxShadow: rechargeState === 'loading' ? 'none' : '0 4px 20px rgba(59,130,246,0.35)',
+            color: 'white',
+          }}
+        >
+          {rechargeState === 'loading' ? (
+            <><Loader2 size={16} className="animate-spin" />جارٍ الشحن...</>
+          ) : rechargeState === 'success' ? (
+            <><CheckCircle2 size={16} className="text-white" />تم الشحن بنجاح!</>
+          ) : (
+            <><Zap size={16} />شحن الحساب</>
           )}
         </motion.button>
       </div>
@@ -658,6 +768,9 @@ export default function DataManagement() {
 
       {/* Section A — Backup */}
       <BackupSection key={`backup-${refreshKey}`} />
+
+      {/* Section A.2 — Recharge */}
+      <RechargeSection />
 
       {/* Divider */}
       <div className="flex items-center gap-4">

@@ -7,6 +7,7 @@ import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layout/MainLayout';
 import PrintDocumentLayout from './components/PrintDocumentLayout';
+import SubscriptionGuard from './components/SubscriptionGuard';
 
 // Pages
 import Login            from './pages/Login';
@@ -67,23 +68,23 @@ export default function App() {
                 <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                   <Route path="/"           element={<Dashboard />} />
                   {/* Supply */}
-                  <Route path="/inventory"  element={<Inventory />} />
-                  <Route path="/purchases"  element={<PurchaseInvoices />} />
-                  <Route path="/suppliers"  element={<Suppliers />} />
+                  <Route path="/inventory"  element={<SubscriptionGuard isCore={true}><Inventory /></SubscriptionGuard>} />
+                  <Route path="/purchases"  element={<SubscriptionGuard><PurchaseInvoices /></SubscriptionGuard>} />
+                  <Route path="/suppliers"  element={<SubscriptionGuard><Suppliers /></SubscriptionGuard>} />
                   {/* Finance */}
-                  <Route path="/invoices"   element={<SalesInvoices />} />
-                  <Route path="/customers"  element={<Customers />} />
-                  <Route path="/checks"     element={<Checks />} />
-                  <Route path="/accounts"   element={<ChartOfAccounts />} />
-                  <Route path="/journal"    element={<JournalEntries />} />
+                  <Route path="/invoices"   element={<SubscriptionGuard><SalesInvoices /></SubscriptionGuard>} />
+                  <Route path="/customers"  element={<SubscriptionGuard><Customers /></SubscriptionGuard>} />
+                  <Route path="/checks"     element={<SubscriptionGuard><Checks /></SubscriptionGuard>} />
+                  <Route path="/accounts"   element={<SubscriptionGuard><ChartOfAccounts /></SubscriptionGuard>} />
+                  <Route path="/journal"    element={<SubscriptionGuard isCore={true}><JournalEntries /></SubscriptionGuard>} />
                   {/* HR */}
-                  <Route path="/assets"     element={<FixedAssets />} />
-                  <Route path="/employees"  element={<Employees />} />
-                  <Route path="/payroll"    element={<Payroll />} />
+                  <Route path="/assets"     element={<SubscriptionGuard><FixedAssets /></SubscriptionGuard>} />
+                  <Route path="/employees"  element={<SubscriptionGuard><Employees /></SubscriptionGuard>} />
+                  <Route path="/payroll"    element={<SubscriptionGuard isCore={true}><Payroll /></SubscriptionGuard>} />
                   {/* Reports & Tools */}
-                  <Route path="/reports"    element={<Reports />} />
-                  <Route path="/sql"        element={<UltraSqlTerminal />} />
-                  <Route path="/data-mgmt"  element={<DataManagement />} />
+                  <Route path="/reports"    element={<SubscriptionGuard><Reports /></SubscriptionGuard>} />
+                  <Route path="/sql"        element={<SubscriptionGuard><UltraSqlTerminal /></SubscriptionGuard>} />
+                  <Route path="/data-mgmt"  element={<SubscriptionGuard><DataManagement /></SubscriptionGuard>} />
                 </Route>
 
                 {/* Catch-all */}

@@ -3,11 +3,14 @@ import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/currencyFormatter';
 
 export default function PrintDocumentLayout() {
-  const { printDoc } = useApp();
+  const { printDoc, tenantProfile } = useApp();
 
   if (!printDoc) return null;
 
   const { type, data } = printDoc;
+  const companyName = tenantProfile?.company_name || 'SmartCore ERP';
+  const companyAddress = tenantProfile?.company_address || 'Riyadh, Saudi Arabia | VAT: 300123456700003';
+  const companyLogo = tenantProfile?.company_logo_url || null;
 
   // 1. Dynamic Labels and schema logic
   let docTitle = '';
@@ -148,10 +151,21 @@ export default function PrintDocumentLayout() {
     <div className="print-document-layout" dir="rtl" style={{ fontFamily: "'Tajawal', sans-serif" }}>
       {/* Header */}
       <div style={{ borderBottom: '2px solid #cbd5e1', paddingBottom: '16px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Company Details */}
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0' }}>SmartCore ERP</h1>
-          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>النظام المحاسبي المتكامل</p>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0' }}>{companyName}</h1>
+          <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>{companyAddress}</p>
         </div>
+        
+        {/* Logo Placeholder or Image */}
+        <div style={{ width: '64px', height: '64px', backgroundColor: '#f1f5f9', borderRadius: '8px', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+          {companyLogo ? (
+            <img src={companyLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#94a3b8' }}>LOGO</span>
+          )}
+        </div>
+
         <div style={{ textAlign: 'left' }}>
           <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: '0 0 8px 0', color: '#0f172a' }}>{docTitle}</h2>
           <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>تاريخ الطباعة: {new Date().toLocaleDateString('ar-SA')}</p>

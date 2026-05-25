@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { supabase, supabaseReady } from '../config/supabaseClient';
 import i18n from '../i18n/index';
 
 const AppContext = createContext(null);
@@ -9,6 +10,9 @@ export function AppProvider({ children }) {
   const [theme, setThemeState] = useState(() => localStorage.getItem('erp-theme') || 'dark');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // SaaS Tenant Profile state
+  const [tenantProfile, setTenantProfile] = useState(null);
   
   // Printing state for individual document layout
   const [printDoc, setPrintDocState] = useState(null);
@@ -57,12 +61,40 @@ export function AppProvider({ children }) {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   }, [theme, setTheme]);
 
-  // Apply initial values on mount
+  // Apply initial values on mount and fetch tenant profile
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.body.className = lang === 'en' ? 'lang-en' : '';
     if (theme === 'dark') document.documentElement.classList.add('dark');
+
+    const fetchTenant = async () => {
+      if (!supabaseReady) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        const { data, error } = await supabase
+          .from('tenants')
+          .select('*')
+          .eq('tenant_id', session.user.id)
+          .single();
+        if (data && !error) {
+          setTenantProfile(data);
+        }
+      }
+    };
+    fetchTenant();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        fetchTenant();
+      } else if (event === 'SIGNED_OUT') {
+        setTenantProfile(null);
+      }
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
   }, []);
 
   return (
@@ -73,6 +105,7 @@ export function AppProvider({ children }) {
       sidebarOpen, setSidebarOpen,
       sidebarCollapsed, setSidebarCollapsed,
       printDoc, printDocument,
+      tenantProfile, setTenantProfile,
     }}>
       {children}
     </AppContext.Provider>
