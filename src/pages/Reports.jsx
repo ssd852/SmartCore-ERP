@@ -30,8 +30,8 @@ export default function Reports() {
           salesRes, purchasesRes, payrollRes,
           suppliersRes, customersRes, inventoryRes, employeesRes,
         ] = await Promise.allSettled([
-          supabase.from('sales').select('amount, total_amount, status'),
-          supabase.from('purchases').select('amount, total_amount'),
+          supabase.from('sales').select('amount, status'),
+          supabase.from('purchases').select('total_amount'),
           supabase.from('payroll').select('net_salary, basic_salary, emp_id, month_year').order('id', { ascending: false }).limit(6),
           supabase.from('suppliers').select('*', { count: 'exact', head: true }),
           supabase.from('customers').select('*', { count: 'exact', head: true }),
@@ -102,7 +102,7 @@ export default function Reports() {
   }, []);
 
   const { totalSales, totalPurchases, totalPayroll, netProfit, salesByStatus, payrollRows, counts } = stats;
-  const fmt = (n) => new Intl.NumberFormat('ar-PS', { style: 'currency', currency: 'ILS' }).format(Number(n) || 0);
+  const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ILS' }).format(Number(n) || 0);
 
   return (
     <div className="flex flex-col gap-6">

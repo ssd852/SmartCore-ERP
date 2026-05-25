@@ -11,7 +11,7 @@ import {
 
 /* ── Currency formatter using ₪ ── */
 function fmt(n) {
-  return new Intl.NumberFormat('ar-PS', { style: 'currency', currency: 'ILS' }).format(Number(n) || 0);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ILS' }).format(Number(n) || 0);
 }
 
 /* ── Skeleton shimmer for loading cards ── */
@@ -70,9 +70,9 @@ export default function Dashboard() {
       try {
         const [salesRes, purchasesRes, payrollRes, customersRes, inventoryRes, employeesRes] =
           await Promise.allSettled([
-            supabase.from('sales').select('amount, total_amount, status, invoice_id').order('invoice_id', { ascending: false }),
-            supabase.from('purchases').select('amount, total_amount, invoice_id').order('invoice_id', { ascending: false }),
-            supabase.from('payroll').select('amount, net_salary, salary'),
+            supabase.from('sales').select('amount, status, invoice_id').order('invoice_id', { ascending: false }),
+            supabase.from('purchases').select('total_amount, invoice_id').order('invoice_id', { ascending: false }),
+            supabase.from('payroll').select('net_salary, basic_salary'),
             supabase.from('customers').select('*', { count: 'exact', head: true }),
             supabase.from('inventory').select('quantity', { count: 'exact' }),
             supabase.from('employees').select('*', { count: 'exact', head: true }),
