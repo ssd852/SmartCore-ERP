@@ -320,6 +320,7 @@ export default function Employees() {
       const p = payroll.find(r => r.emp_id === emp.emp_id && r.month_year === currentMonth);
       return {
         emp_id: emp.emp_id,
+        display_id: emp.display_id || emp.emp_id,
         name: emp.name,
         basic_salary: emp.salary,
         deductions: p ? p.deductions : 0,

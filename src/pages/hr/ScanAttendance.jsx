@@ -41,6 +41,7 @@ export default function ScanAttendance() {
       const { data: employee, error: empError } = await supabase
         .from('employees')
         .select('emp_id')
+        .eq('tenant_id', tenantId)
         .eq('emp_id', String(empId).trim())
         .single();
 
@@ -53,7 +54,6 @@ export default function ScanAttendance() {
       const targetGlobalEmpId = employee.emp_id;
 
       const payload = {
-        user_id: tenantId,
         tenant_id: tenantId,
         employee_id: targetGlobalEmpId,
         status: punchType === 'in' ? '🟢 حضور' : '🔴 انصراف',
