@@ -52,27 +52,68 @@ export default function ScanAttendance() {
       }
       
       const targetGlobalEmpId = employee.emp_id;
+      const todayStr = new Date().toISOString().split('T')[0];
 
-      const payload = {
-        tenant_id: tenantId,
-        employee_id: targetGlobalEmpId,
-        status: punchType === 'in' ? '🟢 حضور' : '🔴 انصراف',
-        clock_in_time: new Date().toISOString()
-      };
+      // Find if an attendance log already exists for today
+      const { data: logs, error: logsErr } = await supabase
+        .from('attendance_logs')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .eq('employee_id', targetGlobalEmpId)
+        .gte('clock_in_time', `${todayStr}T00:00:00Z`)
+        .lte('clock_in_time', `${todayStr}T23:59:59Z`)
+        .order('clock_in_time', { ascending: false })
+        .limit(1);
 
-      const { error } = await supabase.from('attendance_logs').insert([payload]);
-      
-      if (error) {
-         // Suppress missing table error gracefully
-         if (error.code === '42P01') throw new Error('جدول attendance_logs غير موجود في قاعدة البيانات');
-         throw error;
+      if (logsErr && logsErr.code !== '42P01') throw logsErr;
+      const existingLog = logs && logs.length > 0 ? logs[0] : null;
+
+      let actionName = '';
+
+      if (punchType === 'clock_in') {
+        if (existingLog && existingLog.clock_in_time) throw new Error('تم تسجيل الحضور مسبقاً اليوم');
+        const payload = {
+          tenant_id: tenantId,
+          employee_id: targetGlobalEmpId,
+          status: '🟢 حضور',
+          clock_in_time: new Date().toISOString()
+        };
+        const { error } = await supabase.from('attendance_logs').insert([payload]);
+        if (error) {
+          if (error.code === '42P01') throw new Error('جدول attendance_logs غير موجود في قاعدة البيانات');
+          throw error;
+        }
+        actionName = 'الحضور';
+      } else {
+        if (!existingLog) throw new Error('يجب تسجيل الحضور أولاً');
+        const updateData = {};
+        
+        if (punchType === 'leave_out') {
+          if (existingLog.leave_out_time) throw new Error('تم تسجيل إذن المغادرة مسبقاً');
+          updateData.leave_out_time = new Date().toISOString();
+          updateData.status = '🟡 إذن مغادرة';
+          actionName = 'إذن مغادرة';
+        } else if (punchType === 'leave_in') {
+          if (!existingLog.leave_out_time) throw new Error('يجب تسجيل إذن المغادرة أولاً');
+          if (existingLog.leave_in_time) throw new Error('تم تسجيل العودة مسبقاً');
+          updateData.leave_in_time = new Date().toISOString();
+          updateData.status = '🔵 عودة';
+          actionName = 'العودة من المغادرة';
+        } else if (punchType === 'clock_out') {
+          if (existingLog.clock_out_time) throw new Error('تم تسجيل الانصراف مسبقاً');
+          updateData.clock_out_time = new Date().toISOString();
+          updateData.status = '🔴 انصراف';
+          actionName = 'الانصراف';
+        }
+
+        const { error } = await supabase.from('attendance_logs').update(updateData).eq('id', existingLog.id);
+        if (error) throw error;
       }
 
       setStatus('success');
-      setMessage(`تم تسجيل ${punchType === 'in' ? 'الحضور' : 'الانصراف'} بنجاح للموظف #${empId}`);
+      setMessage(`تم تسجيل ${actionName} بنجاح للموظف #${empId}`);
       setEmpId('');
       
-      // Reset success screen after 3 seconds
       setTimeout(() => {
         setStatus('idle');
         setMessage('');
@@ -89,7 +130,6 @@ export default function ScanAttendance() {
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 font-['Tajawal'] text-white selection:bg-indigo-500/30">
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
         
-        {/* Background glow */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-indigo-500/20 blur-[100px] pointer-events-none" />
 
         <div className="text-center z-10 relative">
@@ -97,7 +137,6 @@ export default function ScanAttendance() {
           <h1 className="text-2xl font-black text-white mb-2">نظام تسجيل الدوام</h1>
           <p className="text-slate-400 text-sm font-medium mb-8">تسجيل الدوام الذكي للموظفين</p>
 
-          {/* Digital Clock */}
           <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 font-mono tracking-wider mb-2" dir="ltr">
             {currentTime.toLocaleTimeString('en-US', { hour12: false })}
           </div>
@@ -155,16 +194,30 @@ export default function ScanAttendance() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <button 
-                    onClick={() => handlePunch('in')}
+                    onClick={() => handlePunch('clock_in')}
                     disabled={status === 'loading'}
-                    className="flex flex-col items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white p-6 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
+                    className="flex flex-col items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
                   >
                     {status === 'loading' ? <Loader2 className="animate-spin" /> : '🟢 حضور'}
                   </button>
                   <button 
-                    onClick={() => handlePunch('out')}
+                    onClick={() => handlePunch('leave_out')}
                     disabled={status === 'loading'}
-                    className="flex flex-col items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white p-6 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
+                    className="flex flex-col items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {status === 'loading' ? <Loader2 className="animate-spin" /> : '🟡 إذن مغادرة'}
+                  </button>
+                  <button 
+                    onClick={() => handlePunch('leave_in')}
+                    disabled={status === 'loading'}
+                    className="flex flex-col items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {status === 'loading' ? <Loader2 className="animate-spin" /> : '🔵 عودة'}
+                  </button>
+                  <button 
+                    onClick={() => handlePunch('clock_out')}
+                    disabled={status === 'loading'}
+                    className="flex flex-col items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white p-4 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
                   >
                     {status === 'loading' ? <Loader2 className="animate-spin" /> : '🔴 انصراف'}
                   </button>

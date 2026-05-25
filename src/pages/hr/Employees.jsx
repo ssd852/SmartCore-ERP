@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { supabase, supabaseReady } from '../../config/supabaseClient';
 import { getAuthUserId } from '../../utils/getAuthUserId';
 import { formatCurrency } from '../../utils/currencyFormatter';
+import { calculateAttendanceStats } from '../../utils/attendanceCalculator';
 import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -83,6 +84,9 @@ export default function Employees() {
   const [qrPayload, setQrPayload] = useState('');
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [advances, setAdvances] = useState([]);
+  const [settings, setSettings] = useState({});
+  const [selectedCalendarEmp, setSelectedCalendarEmp] = useState('');
+  const [selectedDayLog, setSelectedDayLog] = useState(null);
   const [tenantId, setTenantId] = useState('');
 
   // Widescreen Mode & Fetch Data
@@ -106,11 +110,12 @@ export default function Employees() {
       
       if (!currentTenant) throw new Error('يرجى تسجيل الدخول أولاً');
       
-      const [empRes, payRes, attRes, advRes] = await Promise.all([
+      const [empRes, payRes, attRes, advRes, settingsRes] = await Promise.all([
         supabase.from('employees').select('*').eq('tenant_id', currentTenant).order('emp_id', { ascending: false }),
         supabase.from('payroll').select('*').eq('tenant_id', currentTenant).order('payroll_id', { ascending: false }),
-        supabase.from('attendance_logs').select('*').eq('tenant_id', currentTenant).order('clock_in_time', { ascending: false }).limit(20),
-        supabase.from('advances_ledger').select('*').eq('tenant_id', currentTenant)
+        supabase.from('attendance_logs').select('*').eq('tenant_id', currentTenant).order('clock_in_time', { ascending: false }),
+        supabase.from('advances_ledger').select('*').eq('tenant_id', currentTenant),
+        supabase.from('company_settings').select('*').eq('tenant_id', currentTenant).single()
       ]);
       
       if (empRes.error) throw empRes.error;
@@ -123,6 +128,9 @@ export default function Employees() {
       }
       if (!advRes.error) {
         setAdvances(advRes.data || []);
+      }
+      if (!settingsRes.error && settingsRes.data) {
+        setSettings(settingsRes.data);
       }
     } catch (err) {
       console.error('Fetch HR Data Error:', err);
@@ -497,46 +505,65 @@ export default function Employees() {
               </div>
             </div>
 
-            {/* Live Feed Panel */}
-            <div className="glass-strong rounded-3xl p-6 flex-1 max-h-[50vh] overflow-y-auto hide-scrollbar relative">
-              <div className="flex items-center justify-between mb-4">
+            {/* Calendar Panel */}
+            <div className="glass-strong rounded-3xl p-6 flex-1 flex flex-col gap-4 relative">
+              <div className="flex justify-between items-center mb-2">
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Clock size={18} className="text-indigo-400" />
-                  سجل الحركات الحي
+                  تقويم الحضور والانصراف
                 </h3>
-                <button 
-                   onClick={() => printDocument('attendance_report', { logs: attendanceLogs, employees })}
-                   className="px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-sm font-bold rounded-lg border border-indigo-500/30 transition-colors flex items-center gap-2"
+                <select 
+                   className="erp-select max-w-[200px]"
+                   value={selectedCalendarEmp}
+                   onChange={(e) => setSelectedCalendarEmp(e.target.value)}
                 >
-                   <Printer size={14} /> طباعة الكشف
-                </button>
+                   <option value="">-- اختر الموظف --</option>
+                   {employees.map(e => <option key={e.emp_id} value={e.emp_id}>{e.name}</option>)}
+                </select>
               </div>
               
-              <div className="flex flex-col gap-3">
-                {attendanceLogs.length === 0 ? (
-                   <p className="text-sm text-slate-500 text-center py-8">لا يوجد حركات مسجلة اليوم.</p>
-                ) : (
-                   attendanceLogs.map((log, idx) => {
-                     const emp = employees.find(e => e.emp_id === log.employee_id);
+              {!selectedCalendarEmp ? (
+                 <div className="flex-1 flex items-center justify-center opacity-50 text-sm font-bold border-2 border-dashed border-slate-700 rounded-2xl">
+                    الرجاء اختيار الموظف لعرض التقويم
+                 </div>
+              ) : (
+                <div className="grid grid-cols-7 gap-2">
+                  {['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'].map(d => (
+                    <div key={d} className="text-center text-xs font-bold text-slate-500 mb-2">{d}</div>
+                  ))}
+                  {Array.from({ length: 30 }).map((_, i) => {
+                     // For demo purposes, we map 1-30 of the current month
+                     const d = new Date();
+                     d.setDate(i+1);
+                     const dateStr = d.toISOString().split('T')[0];
+                     
+                     const log = attendanceLogs.find(l => l.employee_id === selectedCalendarEmp && (l.clock_in_time||'').startsWith(dateStr));
+                     
+                     let bg = 'bg-slate-800/20 border-transparent';
+                     let metric = null;
+                     
+                     if (log) {
+                       metric = calculateAttendanceStats(log, settings);
+                       if (metric.statusColor === 'green') bg = 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
+                       else if (metric.statusColor === 'amber') bg = 'bg-amber-500/20 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]';
+                       else if (metric.statusColor === 'purple') bg = 'bg-purple-500/20 border-purple-500/40 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.15)]';
+                     }
+                     
                      return (
-                       <div key={idx} className="p-3 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between">
-                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-300">
-                             {emp ? emp.name.substring(0, 2) : '?'}
-                           </div>
-                           <div>
-                             <p className="text-sm font-bold text-white">{emp ? emp.name : `موظف #${log.employee_id}`}</p>
-                             <p className="text-xs text-slate-400" dir="ltr">{new Date(log.clock_in_time).toLocaleTimeString('en-US')}</p>
-                           </div>
-                         </div>
-                         <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-                           {log.status}
-                         </div>
-                       </div>
+                       <motion.div 
+                         whileHover={{ scale: 1.05 }}
+                         whileTap={{ scale: 0.95 }}
+                         key={i} 
+                         onClick={() => { if(log) setSelectedDayLog({ log, metric, dateStr }) }}
+                         className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${bg}`}
+                       >
+                         <span className="text-sm font-bold opacity-90">{i+1}</span>
+                         {log && <span className="text-[10px] mt-1 opacity-70">✔</span>}
+                       </motion.div>
                      )
-                   })
-                )}
-              </div>
+                  })}
+                </div>
+              )}
             </div>
 
           </motion.div>
@@ -587,6 +614,71 @@ export default function Employees() {
               </button>
             </div>
           </form>
+        )}
+      </Modal>
+      {/* Calendar Day Timeline Modal */}
+      <Modal isOpen={!!selectedDayLog} onClose={() => setSelectedDayLog(null)} title={`تفاصيل الحركة اليومية`}>
+        {selectedDayLog && (
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center justify-between p-4 bg-slate-800/50 rounded-xl">
+              <span className="text-sm text-slate-400">التاريخ: {selectedDayLog.dateStr}</span>
+              <span className="text-sm font-bold text-white">المدة الفعلية: {selectedDayLog.metric.totalMinutes} دقيقة</span>
+            </div>
+            
+            <div className="flex flex-col gap-3 relative before:content-[''] before:absolute before:right-3.5 before:top-4 before:bottom-4 before:w-0.5 before:bg-indigo-500/30">
+               {selectedDayLog.log.clock_in_time && (
+                 <div className="flex items-center gap-4 relative z-10">
+                   <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.5)]"><div className="w-2 h-2 rounded-full bg-white"></div></div>
+                   <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/10">
+                     <p className="text-xs text-slate-400 mb-1">تسجيل حضور</p>
+                     <p className="text-sm font-bold text-white" dir="ltr">{new Date(selectedDayLog.log.clock_in_time).toLocaleTimeString('en-US')}</p>
+                   </div>
+                 </div>
+               )}
+               {selectedDayLog.log.leave_out_time && (
+                 <div className="flex items-center gap-4 relative z-10">
+                   <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-white"></div></div>
+                   <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/10">
+                     <p className="text-xs text-slate-400 mb-1">إذن مغادرة</p>
+                     <p className="text-sm font-bold text-white" dir="ltr">{new Date(selectedDayLog.log.leave_out_time).toLocaleTimeString('en-US')}</p>
+                   </div>
+                 </div>
+               )}
+               {selectedDayLog.log.leave_in_time && (
+                 <div className="flex items-center gap-4 relative z-10">
+                   <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-white"></div></div>
+                   <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/10">
+                     <p className="text-xs text-slate-400 mb-1">عودة من المغادرة</p>
+                     <p className="text-sm font-bold text-white" dir="ltr">{new Date(selectedDayLog.log.leave_in_time).toLocaleTimeString('en-US')}</p>
+                   </div>
+                 </div>
+               )}
+               {selectedDayLog.log.clock_out_time && (
+                 <div className="flex items-center gap-4 relative z-10">
+                   <div className="w-7 h-7 rounded-full bg-rose-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-white"></div></div>
+                   <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/10">
+                     <p className="text-xs text-slate-400 mb-1">تسجيل انصراف</p>
+                     <p className="text-sm font-bold text-white" dir="ltr">{new Date(selectedDayLog.log.clock_out_time).toLocaleTimeString('en-US')}</p>
+                   </div>
+                 </div>
+               )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-2">
+              {selectedDayLog.metric.overtimeMinutes > 0 && (
+                 <div className="p-4 rounded-xl border border-purple-500/20 bg-purple-500/10 text-center">
+                   <p className="text-xs text-purple-400 mb-1">أوفر تايم</p>
+                   <p className="text-xl font-black text-purple-300">+{selectedDayLog.metric.overtimeMinutes} دقيقة</p>
+                 </div>
+              )}
+              {selectedDayLog.metric.deficitMinutes > 15 && (
+                 <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 text-center">
+                   <p className="text-xs text-amber-400 mb-1">تأخير / نقص</p>
+                   <p className="text-xl font-black text-amber-300">-{selectedDayLog.metric.deficitMinutes} دقيقة</p>
+                 </div>
+              )}
+            </div>
+          </div>
         )}
       </Modal>
     </div>
