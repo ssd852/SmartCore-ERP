@@ -36,6 +36,9 @@ import Employees        from './pages/hr/Employees';
 import Payroll          from './pages/hr/Payroll';
 import ScanAttendance   from './pages/hr/ScanAttendance';
 
+// Profile
+import Profile          from './pages/Profile';
+
 // Error Boundary
 class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
@@ -71,6 +74,8 @@ export default function App() {
                 {/* Protected — uses MainLayout with sidebar/topbar */}
                 <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                   <Route path="/"           element={<Dashboard />} />
+                  <Route path="/profile"    element={<Profile />} />
+                  
                   {/* Supply & Inventory */}
                   <Route path="/inventory"  element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard isCore={true}><Inventory /></SubscriptionGuard></RoleGuard>} />
                   <Route path="/purchases"  element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard><PurchaseInvoices /></SubscriptionGuard></RoleGuard>} />
@@ -97,6 +102,7 @@ export default function App() {
                 {/* Catch-all */}
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
+
             </Router>
           </ToastProvider>
         </AppProvider>

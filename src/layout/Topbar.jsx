@@ -229,11 +229,15 @@ export default function Topbar({ onMenuClick }) {
               </div>
               <div className="py-1">
                 {[
-                  { icon: User, label: t('profile') },
-                  { icon: Settings, label: lang === 'ar' ? 'الإعدادات' : 'Settings' },
-                ].map(({ icon: Icon, label }) => (
+                  { icon: User, label: t('profile'), path: '/profile' },
+                  { icon: Settings, label: lang === 'ar' ? 'الإعدادات' : 'Settings', path: '/settings' },
+                ].map(({ icon: Icon, label, path }) => (
                   <button
                     key={label}
+                    onClick={() => {
+                      if (path) navigate(path);
+                      setUserMenuOpen(false);
+                    }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-white/6 transition-all duration-150"
                   >
                     <Icon size={14} />
