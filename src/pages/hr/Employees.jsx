@@ -292,10 +292,10 @@ export default function Employees() {
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       
-      if (row?.id) {
-        const { error } = await supabase.from('employees').update(form).eq('id', row.id).eq('tenant_id', tenantId);
+      if (row?.emp_id) {
+        const { error } = await supabase.from('employees').update(form).eq('emp_id', row.emp_id).eq('tenant_id', tenantId);
         if (error) throw error;
-        setEmployees(p => p.map(r => r.id === row.id ? { ...r, ...form } : r));
+        setEmployees(p => p.map(r => r.emp_id === row.emp_id ? { ...r, ...form } : r));
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const currentTenant = await getAuthUserId();
@@ -310,6 +310,7 @@ export default function Employees() {
         else await fetchData();
         addToast(t('success_saved'), 'success');
       }
+      if (onClose) onClose();
       fetchData();
     } catch (err) {
       addToast(err.message, 'error');
@@ -406,9 +407,9 @@ export default function Employees() {
 
   const handleDeleteEmployee = async (row) => {
     try {
-      const { error } = await supabase.from('employees').delete().eq('id', row.id).eq('tenant_id', tenantId);
+      const { error } = await supabase.from('employees').delete().eq('emp_id', row.emp_id).eq('tenant_id', tenantId);
       if (error) throw error;
-      setEmployees(p => p.filter(r => r.id !== row.id));
+      setEmployees(p => p.filter(r => r.emp_id !== row.emp_id));
       addToast(t('delete') + ' ✓', 'warning');
     } catch (err) {
       addToast(err.message || 'Failed to delete data', 'error');
