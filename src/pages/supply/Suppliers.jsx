@@ -194,11 +194,12 @@ export default function Suppliers() {
                   <tr key={sup.id} className="hover:bg-slate-800/50 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="font-bold text-white text-base">{sup.name}</div>
-                      <div className="text-slate-500 text-xs mt-1">{sup.company_name || '-'}</div>
+                      {sup.company_name && <div className="text-slate-500 text-xs mt-1">{sup.company_name}</div>}
                     </td>
                     <td className="px-6 py-4">
-                      <div className="font-bold text-slate-300">{sup.phone || '-'}</div>
-                      <div className="text-slate-500 text-xs mt-1">{sup.email || '-'}</div>
+                      {sup.phone && <div className="font-bold text-slate-300" dir="ltr">{sup.phone}</div>}
+                      {sup.email && <div className="text-slate-500 text-xs mt-1" dir="ltr">{sup.email}</div>}
+                      {!sup.phone && !sup.email && <span className="text-slate-600">-</span>}
                     </td>
                     <td className="px-6 py-4">
                       <div className="font-mono text-slate-400 bg-slate-950 px-2 py-1 rounded inline-block text-xs border border-slate-800">
@@ -213,7 +214,7 @@ export default function Suppliers() {
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                             : 'bg-slate-800 text-slate-400 border-slate-700'
                       }`}>
-                        {Number(sup.current_balance).toLocaleString('en-US', { minimumFractionDigits: 2 })} {t('currency_sar')}
+                        {new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR' }).format(Number(sup.current_balance))}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
@@ -318,7 +319,9 @@ export default function Suppliers() {
               
               <div className="bg-slate-950 rounded-xl p-4 mb-6 border border-slate-800 text-center">
                 <div className="text-xs font-bold text-slate-500 mb-1">الرصيد الحالي للمورد</div>
-                <div className="text-xl font-black text-amber-400" dir="ltr">{Number(selectedSupplier.current_balance).toLocaleString('en-US', { minimumFractionDigits: 2 })} SAR</div>
+                <div className="text-xl font-black text-amber-400" dir="ltr">
+                  {new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR' }).format(Number(selectedSupplier.current_balance))}
+                </div>
               </div>
 
               <form onSubmit={handleProcessPayment} className="flex flex-col gap-4">
