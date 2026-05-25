@@ -147,6 +147,27 @@ export default function Employees() {
     return () => clearInterval(interval);
   }, [activeTab, tenantId]);
 
+  // Supabase Realtime Subscription for 0ms Attendance Updates
+  useEffect(() => {
+    if (!supabaseReady || !tenantId) return;
+    
+    const channel = supabase
+      .channel('attendance_changes')
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'attendance_logs',
+        filter: `user_id=eq.${tenantId}`
+      }, (payload) => {
+        setAttendanceLogs(prev => [payload.new, ...prev].slice(0, 20));
+      })
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId]);
+
   // Simulate QR Scan
   const simulateQRScan = async () => {
     if (employees.length === 0) {
@@ -469,11 +490,19 @@ export default function Employees() {
             </div>
 
             {/* Live Feed Panel */}
-            <div className="glass-strong rounded-3xl p-6 flex-1 max-h-[50vh] overflow-y-auto hide-scrollbar">
-              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                <Clock size={18} className="text-indigo-400" />
-                سجل الحركات الحي
-              </h3>
+            <div className="glass-strong rounded-3xl p-6 flex-1 max-h-[50vh] overflow-y-auto hide-scrollbar relative">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Clock size={18} className="text-indigo-400" />
+                  سجل الحركات الحي
+                </h3>
+                <button 
+                   onClick={() => printDocument('attendance_report', { logs: attendanceLogs, employees })}
+                   className="px-4 py-2 bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-sm font-bold rounded-lg border border-indigo-500/30 transition-colors flex items-center gap-2"
+                >
+                   <Printer size={14} /> طباعة الكشف
+                </button>
+              </div>
               
               <div className="flex flex-col gap-3">
                 {attendanceLogs.length === 0 ? (

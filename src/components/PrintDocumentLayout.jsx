@@ -20,8 +20,8 @@ export default function PrintDocumentLayout() {
   if (!printDoc) return null;
 
   const { type, data } = printDoc;
-  const companyName = tenantProfile?.company_name || 'SmartCore ERP';
-  const companyAddress = tenantProfile?.company_address || 'Riyadh, Saudi Arabia | VAT: 300123456700003';
+  const companyName = tenantProfile?.company_name || '';
+  const companyAddress = tenantProfile?.company_address || '';
   const companyLogo = tenantProfile?.company_logo_url || null;
 
   // 1. Dynamic Labels and schema logic
@@ -182,6 +182,46 @@ export default function PrintDocumentLayout() {
              <h2 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 16px 0', color: '#000' }}>نظام تسجيل الدوام الذكي</h2>
              <p style={{ fontSize: '20px', margin: '0', color: '#333' }}>يرجى مسح الكود عبر الهاتف لتسجيل الحضور والانصراف</p>
           </div>
+        </div>
+      );
+    case 'attendance_report':
+      return (
+        <div className="print-document-layout" dir="rtl" style={{ padding: '40px', fontFamily: "'Tajawal', sans-serif", background: '#fff', color: '#000', minHeight: '100vh' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '3px solid #000', paddingBottom: '20px', marginBottom: '30px' }}>
+            <div>
+              <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 8px 0' }}>{companyName}</h1>
+              <p style={{ fontSize: '14px', margin: 0 }}>{companyAddress}</p>
+            </div>
+            {companyLogo && <img src={companyLogo} alt="Logo" style={{ height: '70px', objectFit: 'contain' }} />}
+            <div style={{ textAlign: 'left' }}>
+              <h2 style={{ fontSize: '22px', fontWeight: 'bold', margin: '0 0 8px 0' }}>تقرير الحضور والانصراف</h2>
+              <p style={{ fontSize: '14px', margin: 0 }}>تاريخ الطباعة: {new Date().toLocaleDateString('ar-SA')}</p>
+            </div>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+            <thead>
+              <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #000' }}>
+                <th style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>الرقم الوظيفي</th>
+                <th style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>اسم الموظف</th>
+                <th style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>وقت الحركة</th>
+                <th style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>الحالة</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.logs.map((log, idx) => {
+                const emp = data.employees.find(e => e.emp_id === log.employee_id);
+                return (
+                  <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                    <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{log.employee_id}</td>
+                    <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>{emp ? emp.name : '—'}</td>
+                    <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontFamily: 'monospace' }} dir="ltr">{new Date(log.clock_in_time).toLocaleString('en-US')}</td>
+                    <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{log.status}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       );
     default:
