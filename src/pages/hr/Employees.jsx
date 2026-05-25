@@ -188,6 +188,7 @@ export default function Employees() {
       
       const newLog = {
         user_id,
+        tenant_id: tenantId || user_id,
         employee_id: randomEmp.emp_id,
         clock_in_time: new Date().toISOString(),
         status: '🟢 حضور'

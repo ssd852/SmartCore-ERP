@@ -65,7 +65,8 @@ export default function ScanAttendance() {
       }
 
       const payload = {
-        user_id: tenantId, 
+        user_id: tenantId,
+        tenant_id: tenantId,
         employee_id: targetGlobalEmpId,
         status: punchType === 'in' ? '🟢 حضور' : '🔴 انصراف',
         clock_in_time: new Date().toISOString()
