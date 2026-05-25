@@ -32,7 +32,7 @@ export default function ScanAttendance() {
       const parsedToken = JSON.parse(payloadStr);
 
       const timeDiffInSeconds = (Date.now() - parsedToken.timestamp) / 1000;
-      if (timeDiffInSeconds > 10 || parsedToken.tenant_id !== tenantId) {
+      if (timeDiffInSeconds > 300 || parsedToken.tenant_id !== tenantId) {
          setStatus('error');
          setMessage('الرمز منتهي الصلاحية! يرجى المسح مباشرة من شاشة الإدارة');
          return;

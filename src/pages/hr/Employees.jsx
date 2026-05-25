@@ -227,7 +227,7 @@ export default function Employees() {
       const payload = JSON.stringify({
         tenant_id: tenantId,
         timestamp: timestamp,
-        expires_at: timestamp + 10000 // 10 seconds validity
+        expires_at: timestamp + 300000 // 300 seconds validity
       });
       // In a real app, this should be a cryptographically signed JWT or HMAC
       const token = btoa(payload); 
