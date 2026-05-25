@@ -174,6 +174,50 @@ export default function Employees() {
     }
   };
 
+  // Real-time Attendance Subscription
+  useEffect(() => {
+    if (!supabaseReady || !tenantId) return;
+
+    const channel = supabase.channel('realtime_attendance_logs')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', 
+          schema: 'public',
+          table: 'attendance_logs',
+          filter: `tenant_id=eq.${tenantId}`
+        },
+        (payload) => {
+          // Update the local React components state immediately
+          setAttendanceLogs(prevLogs => {
+            if (payload.eventType === 'DELETE') {
+               return prevLogs.filter(log => log.id !== payload.old.id);
+            }
+            
+            const newLog = payload.new;
+            const existingIndex = prevLogs.findIndex(log => log.id === newLog.id);
+            
+            if (payload.eventType === 'INSERT') {
+              return [newLog, ...prevLogs];
+            } else if (payload.eventType === 'UPDATE') {
+              if (existingIndex > -1) {
+                const updatedLogs = [...prevLogs];
+                updatedLogs[existingIndex] = newLog;
+                return updatedLogs;
+              }
+              return [newLog, ...prevLogs];
+            }
+            return prevLogs;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabaseReady, tenantId]);
+
   // Rotate QR Code Every 60 Seconds
   useEffect(() => {
     if (activeTab !== 2 || !tenantId) return;
