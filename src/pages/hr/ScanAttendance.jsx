@@ -38,9 +38,35 @@ export default function ScanAttendance() {
     try {
       if (!supabaseReady) throw new Error('قاعدة البيانات غير متصلة');
 
+      let targetGlobalEmpId = null;
+
+      const { data: emps, error: empError } = await supabase
+        .from('employees')
+        .select('emp_id')
+        .eq('user_id', tenantId)
+        .eq('tenant_emp_id', parseInt(empId, 10));
+
+      if (empError || !emps || emps.length === 0) {
+        // Fallback to searching by global emp_id just in case the migration hasn't run yet
+        const { data: fallbackEmps } = await supabase
+          .from('employees')
+          .select('emp_id')
+          .eq('user_id', tenantId)
+          .eq('emp_id', parseInt(empId, 10));
+          
+        if (!fallbackEmps || fallbackEmps.length === 0) {
+          setStatus('error');
+          setMessage('الرقم الوظيفي غير موجود في نظام شركتك');
+          return;
+        }
+        targetGlobalEmpId = fallbackEmps[0].emp_id;
+      } else {
+        targetGlobalEmpId = emps[0].emp_id;
+      }
+
       const payload = {
-        user_id: tenantId, // Using the tenant ID from the URL to map to the correct organization
-        employee_id: parseInt(empId, 10),
+        user_id: tenantId, 
+        employee_id: targetGlobalEmpId,
         status: punchType === 'in' ? '🟢 حضور' : '🔴 انصراف',
         clock_in_time: new Date().toISOString()
       };

@@ -96,20 +96,24 @@ export default function Employees() {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       
       const { data: { session } } = await supabase.auth.getSession();
+      let currentTenant = null;
       if (session?.user?.id) {
-        setTenantId(session.user.id);
+        currentTenant = session.user.id;
+        setTenantId(currentTenant);
       }
       
+      if (!currentTenant) throw new Error('يرجى تسجيل الدخول أولاً');
+      
       const [empRes, payRes, attRes] = await Promise.all([
-        supabase.from('employees').select('*').order('emp_id', { ascending: false }),
-        supabase.from('payroll').select('*').order('payroll_id', { ascending: false }),
-        supabase.from('attendance_logs').select('*').order('clock_in_time', { ascending: false }).limit(20)
+        supabase.from('employees').select('*').eq('user_id', currentTenant).order('emp_id', { ascending: false }),
+        supabase.from('payroll').select('*').eq('user_id', currentTenant).order('payroll_id', { ascending: false }),
+        supabase.from('attendance_logs').select('*').eq('user_id', currentTenant).order('clock_in_time', { ascending: false }).limit(20)
       ]);
       
       if (empRes.error) throw empRes.error;
       if (payRes.error) throw payRes.error;
 
-      setEmployees(empRes.data || []);
+      setEmployees(empRes.data?.map(e => ({ ...e, display_id: e.tenant_emp_id || e.emp_id })) || []);
       setPayroll(payRes.data || []);
       if (!attRes.error) {
         setAttendanceLogs(attRes.data || []);
@@ -223,10 +227,14 @@ export default function Employees() {
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();
-        const payload = { ...form, user_id };
+        const maxLocalId = Math.max(0, ...employees.map(e => e.tenant_emp_id || 0));
+        const payload = { ...form, user_id, tenant_emp_id: maxLocalId + 1 };
         const { data: newRecords, error } = await supabase.from('employees').insert([payload]).select();
         if (error) throw error;
-        if (newRecords && newRecords.length > 0) setEmployees(p => [newRecords[0], ...p]);
+        if (newRecords && newRecords.length > 0) {
+           const newEmp = { ...newRecords[0], display_id: newRecords[0].tenant_emp_id || newRecords[0].emp_id };
+           setEmployees(p => [newEmp, ...p]);
+        }
         else await fetchData();
         addToast(t('save') + ' ✓', 'success');
       }
@@ -364,7 +372,7 @@ export default function Employees() {
               onPrint={(row) => printDocument('employees', row)}
               title={t('employees')} 
               columns={[
-                { key: 'emp_id',     label: t('emp_id') },
+                { key: 'display_id', label: t('emp_id') },
                 { key: 'name',       label: t('name') },
                 { key: 'position',   label: t('position') },
                 { key: 'department', label: t('department') },
@@ -406,7 +414,7 @@ export default function Employees() {
                   <tbody>
                     {payrollGridData.map(row => (
                       <tr key={row.emp_id}>
-                        <td className="font-mono text-slate-400">{row.emp_id}</td>
+                        <td className="font-mono text-slate-400">{row.display_id || row.emp_id}</td>
                         <td className="font-bold text-white">{row.name}</td>
                         <td className="font-mono text-slate-300">{formatCurrency(row.basic_salary)}</td>
                         <td className="font-mono text-rose-400">{formatCurrency(row.deductions)}</td>
