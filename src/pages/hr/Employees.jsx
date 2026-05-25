@@ -101,6 +101,16 @@ export default function Employees() {
     holidays: []
   });
 
+  // Leave Management State
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [selectedEmpForLeave, setSelectedEmpForLeave] = useState(null);
+  const [leaveForm, setLeaveForm] = useState({
+    type: 'إجازة سنوية',
+    days_count: 1,
+    start_date: new Date().toISOString().split('T')[0],
+    notes: ''
+  });
+
   // Widescreen Mode & Fetch Data
   useEffect(() => {
     setSidebarCollapsed(true);
@@ -314,6 +324,58 @@ export default function Employees() {
     }
   };
 
+  // Leave Booking Submission
+  const submitLeave = async (e) => {
+    e.preventDefault();
+    if (!selectedEmpForLeave || !leaveForm.days_count) return;
+    setIsSaving(true);
+    try {
+      if (!supabaseReady) throw new Error('قاعدة البيانات غير متصلة');
+
+      const payload = {
+        tenant_id: tenantId,
+        emp_id: selectedEmpForLeave.emp_id,
+        leave_type: leaveForm.type,
+        days_count: Number(leaveForm.days_count),
+        start_date: leaveForm.start_date,
+        notes: leaveForm.notes
+      };
+      
+      const { error: insErr } = await supabase.from('leave_transactions').insert([payload]);
+      if (insErr) {
+        if (insErr.code === '42P01') throw new Error('جدول leave_transactions غير موجود في قاعدة البيانات');
+        throw insErr;
+      }
+
+      let currentAnnual = Number(selectedEmpForLeave.annual_leave_balance ?? 21);
+      let currentSick = Number(selectedEmpForLeave.sick_leave_balance ?? 14);
+
+      if (leaveForm.type === 'إجازة سنوية') {
+        currentAnnual = Math.max(0, currentAnnual - Number(leaveForm.days_count));
+      } else if (leaveForm.type === 'إجازة مرضية') {
+        currentSick = Math.max(0, currentSick - Number(leaveForm.days_count));
+      }
+
+      const { error: updErr } = await supabase.from('employees')
+        .update({
+          annual_leave_balance: currentAnnual,
+          sick_leave_balance: currentSick
+        })
+        .eq('emp_id', selectedEmpForLeave.emp_id)
+        .eq('tenant_id', tenantId);
+
+      if (updErr && updErr.code !== '42703') throw updErr;
+
+      addToast('تم تسجيل الإجازة بنجاح', 'success');
+      setShowLeaveModal(false);
+      fetchData();
+    } catch (err) {
+      addToast(err.message || 'حدث خطأ أثناء تسجيل الإجازة', 'error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDeleteEmployee = async (row) => {
     try {
       const { error } = await supabase.from('employees').delete().eq('id', row.id).eq('tenant_id', tenantId);
@@ -450,6 +512,14 @@ export default function Employees() {
                 { key: 'position',   label: t('position') },
                 { key: 'department', label: t('department') },
                 { key: 'salary',     label: t('salary') },
+                { key: 'actions', label: 'الإجازات', render: (val, row) => (
+                    <button 
+                      onClick={() => { setSelectedEmpForLeave(row); setShowLeaveModal(true); }}
+                      className="px-3 py-1 bg-indigo-500/20 text-indigo-400 rounded-lg font-bold text-xs hover:bg-indigo-500/40"
+                    >
+                       إدارة الإجازات
+                    </button>
+                 )},
               ]} 
               data={employees} 
               isLoading={isLoading}
@@ -597,7 +667,6 @@ export default function Employees() {
                     <div key={d} className="text-center text-xs font-bold text-slate-500 mb-2">{d}</div>
                   ))}
                   {Array.from({ length: 30 }).map((_, i) => {
-                     // For demo purposes, we map 1-30 of the current month
                      const d = new Date();
                      d.setDate(i+1);
                      const dateStr = d.toISOString().split('T')[0];
@@ -607,9 +676,11 @@ export default function Employees() {
                      let bg = 'bg-slate-800/20 border-transparent';
                      let metric = null;
                      
-                     if (log) {
-                       metric = calculateAttendanceStats(log, settings);
-                       if (metric.statusColor === 'green') bg = 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
+                     if (log || settings?.holidays?.includes(dateStr)) {
+                       metric = calculateAttendanceStats(log, settings, dateStr);
+                       if (metric.statusColor === 'emerald') bg = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]'; // Holiday absence
+                       else if (metric.statusColor === 'indigo') bg = 'bg-indigo-500/20 border-indigo-500/40 text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)]'; // Worked holiday
+                       else if (metric.statusColor === 'green') bg = 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]';
                        else if (metric.statusColor === 'amber') bg = 'bg-amber-500/20 border-amber-500/40 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]';
                        else if (metric.statusColor === 'purple') bg = 'bg-purple-500/20 border-purple-500/40 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.15)]';
                      }
@@ -619,11 +690,12 @@ export default function Employees() {
                          whileHover={{ scale: 1.05 }}
                          whileTap={{ scale: 0.95 }}
                          key={i} 
-                         onClick={() => { if(log) setSelectedDayLog({ log, metric, dateStr }) }}
+                         onClick={() => { if(log || metric?.isHoliday) setSelectedDayLog({ log: log || {}, metric, dateStr }) }}
                          className={`aspect-square rounded-xl border flex flex-col items-center justify-center cursor-pointer transition-all ${bg}`}
                        >
                          <span className="text-sm font-bold opacity-90">{i+1}</span>
-                         {log && <span className="text-[10px] mt-1 opacity-70">✔</span>}
+                         {log && log.clock_in_time && <span className="text-[10px] mt-1 opacity-70">✔</span>}
+                         {metric?.isHoliday && !log && <span className="text-[10px] mt-1 opacity-70">🏖️</span>}
                        </motion.div>
                      )
                   })}
@@ -691,7 +763,7 @@ export default function Employees() {
             </div>
             
             <div className="flex flex-col gap-3 relative before:content-[''] before:absolute before:right-3.5 before:top-4 before:bottom-4 before:w-0.5 before:bg-indigo-500/30">
-               {selectedDayLog.log.clock_in_time && (
+               {selectedDayLog.log?.clock_in_time ? (
                  <div className="flex items-center gap-4 relative z-10">
                    <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center shadow-[0_0_10px_rgba(99,102,241,0.5)]"><div className="w-2 h-2 rounded-full bg-white"></div></div>
                    <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/10">
@@ -699,8 +771,10 @@ export default function Employees() {
                      <p className="text-sm font-bold text-white" dir="ltr">{new Date(selectedDayLog.log.clock_in_time).toLocaleTimeString('en-US')}</p>
                    </div>
                  </div>
+               ) : (
+                 <div className="text-center text-slate-400 py-4 font-bold">لا يوجد حضور هذا اليوم {selectedDayLog.metric.isHoliday ? '(عطلة مدفوعة الأجر)' : ''}</div>
                )}
-               {selectedDayLog.log.leave_out_time && (
+               {selectedDayLog.log?.leave_out_time && (
                  <div className="flex items-center gap-4 relative z-10">
                    <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-white"></div></div>
                    <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/10">
@@ -709,7 +783,7 @@ export default function Employees() {
                    </div>
                  </div>
                )}
-               {selectedDayLog.log.leave_in_time && (
+               {selectedDayLog.log?.leave_in_time && (
                  <div className="flex items-center gap-4 relative z-10">
                    <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-white"></div></div>
                    <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/10">
@@ -718,7 +792,7 @@ export default function Employees() {
                    </div>
                  </div>
                )}
-               {selectedDayLog.log.clock_out_time && (
+               {selectedDayLog.log?.clock_out_time && (
                  <div className="flex items-center gap-4 relative z-10">
                    <div className="w-7 h-7 rounded-full bg-rose-500 flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-white"></div></div>
                    <div className="flex-1 p-3 bg-white/5 rounded-xl border border-white/10">
@@ -736,7 +810,7 @@ export default function Employees() {
                    <p className="text-xl font-black text-purple-300">+{selectedDayLog.metric.overtimeMinutes} دقيقة</p>
                  </div>
               )}
-              {selectedDayLog.metric.deficitMinutes > 15 && (
+              {selectedDayLog.metric.deficitMinutes > 15 && !selectedDayLog.metric.isHoliday && (
                  <div className="p-4 rounded-xl border border-amber-500/20 bg-amber-500/10 text-center">
                    <p className="text-xs text-amber-400 mb-1">تأخير / نقص</p>
                    <p className="text-xl font-black text-amber-300">-{selectedDayLog.metric.deficitMinutes} دقيقة</p>
@@ -744,6 +818,91 @@ export default function Employees() {
               )}
             </div>
           </div>
+        )}
+      </Modal>
+
+      {/* Leave Booking Modal */}
+      <Modal isOpen={showLeaveModal} onClose={() => setShowLeaveModal(false)} title="تسجيل إجازة للموظف">
+        {selectedEmpForLeave && (
+          <form onSubmit={submitLeave} className="flex flex-col gap-4">
+            <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl mb-2 border border-white/5">
+              <div>
+                <p className="text-sm text-slate-300">الموظف: <strong className="text-white">{selectedEmpForLeave.name}</strong></p>
+              </div>
+              <div className="flex gap-4">
+                 <div className="text-center">
+                   <p className="text-[10px] text-slate-400">سنوية</p>
+                   <p className="font-bold text-emerald-400">{selectedEmpForLeave.annual_leave_balance ?? 21}</p>
+                 </div>
+                 <div className="text-center">
+                   <p className="text-[10px] text-slate-400">مرضية</p>
+                   <p className="font-bold text-amber-400">{selectedEmpForLeave.sick_leave_balance ?? 14}</p>
+                 </div>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5">نوع الإجازة</label>
+              <select 
+                 className="erp-select"
+                 value={leaveForm.type} 
+                 onChange={e => setLeaveForm(p => ({...p, type: e.target.value}))} 
+                 disabled={isSaving}
+              >
+                 <option>إجازة سنوية</option>
+                 <option>إجازة مرضية</option>
+                 <option>مغادرة بدون راتب</option>
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5">تاريخ البدء</label>
+                <input 
+                  type="date" 
+                  className="erp-input text-left" 
+                  dir="ltr" 
+                  value={leaveForm.start_date} 
+                  onChange={e => setLeaveForm(p => ({...p, start_date: e.target.value}))} 
+                  required 
+                  disabled={isSaving} 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-400 mb-1.5">عدد الأيام</label>
+                <input 
+                  type="number" 
+                  className="erp-input text-left" 
+                  dir="ltr" 
+                  value={leaveForm.days_count} 
+                  onChange={e => setLeaveForm(p => ({...p, days_count: e.target.value}))} 
+                  required 
+                  disabled={isSaving} 
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5">ملاحظات / السبب</label>
+              <input 
+                className="erp-input" 
+                value={leaveForm.notes} 
+                onChange={e => setLeaveForm(p => ({...p, notes: e.target.value}))} 
+                disabled={isSaving} 
+                placeholder="توضيح الإجازة..."
+              />
+            </div>
+            
+            <div className="flex gap-3 pt-4">
+              <button type="button" onClick={() => setShowLeaveModal(false)} disabled={isSaving} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-400 border border-white/10 hover:bg-white/5 transition-all">
+                إلغاء
+              </button>
+              <button type="submit" disabled={isSaving} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2">
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : null}
+                تسجيل وخصم الإجازة
+              </button>
+            </div>
+          </form>
         )}
       </Modal>
 
