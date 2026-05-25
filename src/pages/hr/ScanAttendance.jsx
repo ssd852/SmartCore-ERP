@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase, supabaseReady } from '../../config/supabaseClient';
-import { Clock, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { Clock, CheckCircle2, AlertCircle, Loader2, ScanLine } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ScanAttendance() {
@@ -13,14 +13,30 @@ export default function ScanAttendance() {
   const [empId, setEmpId] = useState('');
   const [status, setStatus] = useState('idle'); // idle, loading, success, error
   const [message, setMessage] = useState('');
+  const inputRef = useRef(null);
 
-  // Live Digital Clock
+  // Live Digital Clock & Auto-Focus
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    if (inputRef.current) inputRef.current.focus();
     return () => clearInterval(timer);
   }, []);
 
-  const handlePunch = async (punchType) => {
+  // Keep focus locked on the input for barcode scanners
+  const handleBlur = () => {
+    setTimeout(() => {
+      if (inputRef.current) inputRef.current.focus();
+    }, 100);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleBarcodeScan();
+    }
+  };
+
+  const handleBarcodeScan = async () => {
     if (!encodedToken) {
       setStatus('error');
       setMessage('الرمز مفقود! يرجى مسح رمز الـ QR من الشاشة مجدداً');
@@ -34,7 +50,7 @@ export default function ScanAttendance() {
       const timeDiffInSeconds = (Date.now() - parsedToken.timestamp) / 1000;
       if (timeDiffInSeconds > 300 || parsedToken.tenant_id !== tenantId) {
          setStatus('error');
-         setMessage('الرمز منتهي الصلاحية! يرجى المسح مباشرة من شاشة الإدارة');
+         setMessage('الرمز منتهي الصلاحية! يرجى تحديث الشاشة الرئيسية');
          return;
       }
     } catch (e) {
@@ -43,12 +59,8 @@ export default function ScanAttendance() {
       return;
     }
 
-    if (!empId) {
-      setStatus('error');
-      setMessage('الرجاء إدخال الرقم الوظيفي أولاً');
-      return;
-    }
-    
+    if (!empId || empId.trim() === '') return;
+
     if (!tenantId) {
       setStatus('error');
       setMessage('عذراً، الرابط غير صالح (Tenant ID مفقود)');
@@ -57,15 +69,16 @@ export default function ScanAttendance() {
 
     setStatus('loading');
     setMessage('');
+    const scannedId = empId.trim();
 
     try {
       if (!supabaseReady) throw new Error('قاعدة البيانات غير متصلة');
 
       const { data: employee, error: empError } = await supabase
         .from('employees')
-        .select('emp_id')
+        .select('emp_id, name')
         .eq('tenant_id', tenantId)
-        .eq('emp_id', String(empId).trim())
+        .eq('emp_id', scannedId)
         .single();
 
       if (empError || !employee) {
@@ -73,46 +86,6 @@ export default function ScanAttendance() {
       }
       
       const targetGlobalEmpId = employee.emp_id;
-
-      // 3. Biometric Verification Check
-      const { data: bioData, error: bioError } = await supabase
-        .from('employee_biometrics')
-        .select('*')
-        .eq('tenant_id', tenantId)
-        .eq('employee_id', targetGlobalEmpId)
-        .single();
-        
-      if (bioError || !bioData) {
-        throw new Error('يرجى ربط بصمة الجهاز من حساب الموظف أولاً لتفعيل الدخول السريع.');
-      }
-      
-      try {
-        if (!window.PublicKeyCredential) {
-          throw new Error('WebAuthn not supported');
-        }
-        
-        const rawId = Uint8Array.from(atob(bioData.credential_id), c => c.charCodeAt(0));
-        
-        const credential = await navigator.credentials.get({
-          publicKey: {
-            challenge: new Uint8Array(32),
-            allowCredentials: [{
-              id: rawId,
-              type: 'public-key'
-            }],
-            rpId: window.location.hostname,
-            userVerification: "required"
-          }
-        });
-        
-        if (!credential) {
-           throw new Error('Biometric cancelled');
-        }
-      } catch (bioEx) {
-        console.error('Biometric Auth Error:', bioEx);
-        throw new Error('فشلت عملية التحقق من الهوية! يجب استخدام بصمة الإصبع الحقيقية للجهاز');
-      }
-
       const todayStr = new Date().toISOString().split('T')[0];
 
       // Find if an attendance log already exists for today
@@ -130,60 +103,61 @@ export default function ScanAttendance() {
       const existingLog = logs && logs.length > 0 ? logs[0] : null;
 
       let actionName = '';
+      let isInsert = false;
+      let updateData = {};
 
-      if (punchType === 'clock_in') {
-        if (existingLog && existingLog.clock_in_time) throw new Error('تم تسجيل الحضور مسبقاً اليوم');
-        const payload = {
+      if (!existingLog || !existingLog.clock_in_time) {
+        // Clock In
+        isInsert = true;
+        updateData = {
           tenant_id: tenantId,
           employee_id: targetGlobalEmpId,
           status: '🟢 حضور',
           clock_in_time: new Date().toISOString()
         };
-        const { error } = await supabase.from('attendance_logs').insert([payload]);
+        actionName = 'الحضور';
+      } else if (!existingLog.clock_out_time) {
+        // Clock Out
+        updateData = {
+          clock_out_time: new Date().toISOString(),
+          status: '🔴 انصراف'
+        };
+        actionName = 'الانصراف';
+      } else {
+        throw new Error('لقد تم تسجيل الحضور والانصراف مسبقاً لهذا اليوم');
+      }
+
+      if (isInsert) {
+        const { error } = await supabase.from('attendance_logs').insert([updateData]);
         if (error) {
           if (error.code === '42P01') throw new Error('جدول attendance_logs غير موجود في قاعدة البيانات');
           throw error;
         }
-        actionName = 'الحضور';
       } else {
-        if (!existingLog) throw new Error('يجب تسجيل الحضور أولاً');
-        const updateData = {};
-        
-        if (punchType === 'leave_out') {
-          if (existingLog.leave_out_time) throw new Error('تم تسجيل إذن المغادرة مسبقاً');
-          updateData.leave_out_time = new Date().toISOString();
-          updateData.status = '🟡 إذن مغادرة';
-          actionName = 'إذن مغادرة';
-        } else if (punchType === 'leave_in') {
-          if (!existingLog.leave_out_time) throw new Error('يجب تسجيل إذن المغادرة أولاً');
-          if (existingLog.leave_in_time) throw new Error('تم تسجيل العودة مسبقاً');
-          updateData.leave_in_time = new Date().toISOString();
-          updateData.status = '🔵 عودة';
-          actionName = 'العودة من المغادرة';
-        } else if (punchType === 'clock_out') {
-          if (existingLog.clock_out_time) throw new Error('تم تسجيل الانصراف مسبقاً');
-          updateData.clock_out_time = new Date().toISOString();
-          updateData.status = '🔴 انصراف';
-          actionName = 'الانصراف';
-        }
-
         const { error } = await supabase.from('attendance_logs').update(updateData).eq('id', existingLog.id);
         if (error) throw error;
       }
 
       setStatus('success');
-      setMessage(`تم تسجيل ${actionName} بنجاح للموظف #${empId}`);
+      setMessage(`تم تسجيل ${actionName} بنجاح عبر الباركود! (${employee.name})`);
       setEmpId('');
       
       setTimeout(() => {
         setStatus('idle');
         setMessage('');
+        if (inputRef.current) inputRef.current.focus();
       }, 3000);
 
     } catch (err) {
       console.error('Punch Error:', err);
       setStatus('error');
       setMessage(err.message || 'حدث خطأ أثناء تسجيل الحركة');
+      setEmpId(''); // Clear on error too for next scan
+      setTimeout(() => {
+        setStatus('idle');
+        setMessage('');
+        if (inputRef.current) inputRef.current.focus();
+      }, 3000);
     }
   };
 
@@ -194,9 +168,9 @@ export default function ScanAttendance() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-32 bg-indigo-500/20 blur-[100px] pointer-events-none" />
 
         <div className="text-center z-10 relative">
-          <Clock size={40} className="text-indigo-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-black text-white mb-2">نظام تسجيل الدوام</h1>
-          <p className="text-slate-400 text-sm font-medium mb-8">تسجيل الدوام الذكي للموظفين</p>
+          <ScanLine size={48} className="text-indigo-400 mx-auto mb-4" />
+          <h1 className="text-2xl font-black text-white mb-2">تسجيل الدوام بالباركود</h1>
+          <p className="text-slate-400 text-sm font-medium mb-8">يرجى مسح بطاقة الموظف أو إدخال الرقم الوظيفي</p>
 
           <div className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-white to-slate-400 font-mono tracking-wider mb-2" dir="ltr">
             {currentTime.toLocaleTimeString('en-US', { hour12: false })}
@@ -232,7 +206,7 @@ export default function ScanAttendance() {
               </motion.div>
             )}
 
-            {(status === 'idle' || status === 'loading' || status === 'error') && (
+            {(status === 'idle' || status === 'loading') && (
               <motion.div 
                 key="form"
                 initial={{ opacity: 0 }}
@@ -240,48 +214,28 @@ export default function ScanAttendance() {
                 exit={{ opacity: 0 }}
                 className="flex flex-col gap-6"
               >
-                <div>
-                  <label className="block text-sm font-bold text-slate-400 mb-2 text-right">الرقم الوظيفي (ID)</label>
+                <div className="relative">
+                  {status === 'loading' && (
+                    <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                      <Loader2 className="w-6 h-6 text-indigo-500 animate-spin" />
+                    </div>
+                  )}
                   <input 
-                    type="number"
+                    ref={inputRef}
+                    type="text"
                     dir="ltr"
                     value={empId}
                     onChange={(e) => setEmpId(e.target.value)}
-                    placeholder="مثال: 20"
+                    onKeyDown={handleKeyDown}
+                    onBlur={handleBlur}
+                    placeholder="الرقم الوظيفي أو مسح الباركود..."
                     disabled={status === 'loading'}
-                    className="w-full bg-slate-950 border-2 border-slate-800 focus:border-indigo-500 rounded-2xl px-6 py-4 text-2xl font-black text-center text-white outline-none transition-all placeholder:text-slate-700"
+                    autoFocus
+                    className="w-full bg-slate-950 border-2 border-slate-800 focus:border-indigo-500 rounded-2xl px-6 py-5 text-2xl font-black text-center text-white outline-none transition-all placeholder:text-slate-700 disabled:opacity-50"
                   />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    onClick={() => handlePunch('clock_in')}
-                    disabled={status === 'loading'}
-                    className="flex flex-col items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white p-4 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {status === 'loading' ? <Loader2 className="animate-spin" /> : '🟢 حضور'}
-                  </button>
-                  <button 
-                    onClick={() => handlePunch('leave_out')}
-                    disabled={status === 'loading'}
-                    className="flex flex-col items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white p-4 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {status === 'loading' ? <Loader2 className="animate-spin" /> : '🟡 إذن مغادرة'}
-                  </button>
-                  <button 
-                    onClick={() => handlePunch('leave_in')}
-                    disabled={status === 'loading'}
-                    className="flex flex-col items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white p-4 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {status === 'loading' ? <Loader2 className="animate-spin" /> : '🔵 عودة'}
-                  </button>
-                  <button 
-                    onClick={() => handlePunch('clock_out')}
-                    disabled={status === 'loading'}
-                    className="flex flex-col items-center justify-center gap-2 bg-rose-600 hover:bg-rose-500 text-white p-4 rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {status === 'loading' ? <Loader2 className="animate-spin" /> : '🔴 انصراف'}
-                  </button>
+                  <div className="absolute -bottom-6 left-0 right-0 text-center">
+                    <span className="text-[10px] font-bold tracking-widest text-slate-600">BARCODE SCANNER READY</span>
+                  </div>
                 </div>
               </motion.div>
             )}
