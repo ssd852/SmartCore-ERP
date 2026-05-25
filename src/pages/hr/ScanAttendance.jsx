@@ -38,31 +38,19 @@ export default function ScanAttendance() {
     try {
       if (!supabaseReady) throw new Error('قاعدة البيانات غير متصلة');
 
-      let targetGlobalEmpId = null;
-
-      const { data: emps, error: empError } = await supabase
+      const { data: employee, error: empError } = await supabase
         .from('employees')
         .select('emp_id')
-        .eq('user_id', tenantId)
-        .eq('tenant_emp_id', parseInt(empId, 10));
+        .eq('emp_id', String(empId).trim())
+        .single();
 
-      if (empError || !emps || emps.length === 0) {
-        // Fallback to searching by global emp_id just in case the migration hasn't run yet
-        const { data: fallbackEmps } = await supabase
-          .from('employees')
-          .select('emp_id')
-          .eq('user_id', tenantId)
-          .eq('emp_id', parseInt(empId, 10));
-          
-        if (!fallbackEmps || fallbackEmps.length === 0) {
-          setStatus('error');
-          setMessage('الرقم الوظيفي غير موجود في نظام شركتك');
-          return;
-        }
-        targetGlobalEmpId = fallbackEmps[0].emp_id;
-      } else {
-        targetGlobalEmpId = emps[0].emp_id;
+      if (empError || !employee) {
+        setStatus('error');
+        setMessage('الرقم الوظيفي غير موجود في نظام شركتك');
+        return;
       }
+      
+      const targetGlobalEmpId = employee.emp_id;
 
       const payload = {
         user_id: tenantId,
