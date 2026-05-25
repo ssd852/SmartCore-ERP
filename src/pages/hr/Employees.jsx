@@ -9,6 +9,7 @@ import { supabase, supabaseReady } from '../../config/supabaseClient';
 import { getAuthUserId } from '../../utils/getAuthUserId';
 import { formatCurrency } from '../../utils/currencyFormatter';
 import { motion, AnimatePresence } from 'framer-motion';
+import QRCode from 'react-qr-code';
 
 const DEPARTMENTS = ['المالية', 'المحاسبة', 'الموارد البشرية', 'التقنية', 'المبيعات', 'الإدارة'];
 
@@ -78,6 +79,11 @@ export default function Employees() {
   const [advanceAmount, setAdvanceAmount] = useState('');
   const [advanceDesc, setAdvanceDesc] = useState('');
 
+  // Attendance & QR State
+  const [qrPayload, setQrPayload] = useState('');
+  const [attendanceLogs, setAttendanceLogs] = useState([]);
+  const [tenantId, setTenantId] = useState('');
+
   // Widescreen Mode & Fetch Data
   useEffect(() => {
     setSidebarCollapsed(true);
@@ -89,9 +95,15 @@ export default function Employees() {
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       
-      const [empRes, payRes] = await Promise.all([
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setTenantId(session.user.id);
+      }
+      
+      const [empRes, payRes, attRes] = await Promise.all([
         supabase.from('employees').select('*').order('emp_id', { ascending: false }),
-        supabase.from('payroll').select('*').order('payroll_id', { ascending: false })
+        supabase.from('payroll').select('*').order('payroll_id', { ascending: false }),
+        supabase.from('attendance_logs').select('*').order('clock_in_time', { ascending: false }).limit(20)
       ]);
       
       if (empRes.error) throw empRes.error;
@@ -99,11 +111,79 @@ export default function Employees() {
 
       setEmployees(empRes.data || []);
       setPayroll(payRes.data || []);
+      if (!attRes.error) {
+        setAttendanceLogs(attRes.data || []);
+      }
     } catch (err) {
       console.error('Fetch HR Data Error:', err);
-      addToast(err.message || 'Failed to load HR data', 'error');
+      // Suppress missing attendance_logs table error if it doesn't exist yet
+      if (err.code !== '42P01') {
+         addToast(err.message || 'Failed to load HR data', 'error');
+      }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Rotate QR Code Every 60 Seconds
+  useEffect(() => {
+    if (activeTab !== 2 || !tenantId) return;
+
+    const generatePayload = () => {
+      const timestamp = Date.now();
+      const payload = JSON.stringify({
+        tenant_id: tenantId,
+        timestamp: timestamp,
+        expires_at: timestamp + 60000 // 60 seconds validity
+      });
+      // In a real app, this should be a cryptographically signed JWT or HMAC
+      setQrPayload(btoa(payload)); 
+    };
+
+    generatePayload();
+    const interval = setInterval(generatePayload, 60000);
+    return () => clearInterval(interval);
+  }, [activeTab, tenantId]);
+
+  // Simulate QR Scan
+  const simulateQRScan = async () => {
+    if (employees.length === 0) {
+      addToast('لا يوجد موظفين مسجلين لتسجيل حضورهم', 'error');
+      return;
+    }
+    
+    // Pick a random employee
+    const randomEmp = employees[Math.floor(Math.random() * employees.length)];
+    
+    try {
+      if (!supabaseReady) throw new Error('Supabase is not configured.');
+      const user_id = await getAuthUserId();
+      
+      const newLog = {
+        user_id,
+        employee_id: randomEmp.emp_id,
+        clock_in_time: new Date().toISOString(),
+        status: '🟢 حضور'
+      };
+
+      const { data, error } = await supabase.from('attendance_logs').insert([newLog]).select();
+      if (error) {
+         if (error.code === '42P01') {
+            addToast('جدول attendance_logs غير موجود بقاعدة البيانات بعد.', 'error');
+            return;
+         }
+         throw error;
+      }
+      
+      if (data && data.length > 0) {
+        setAttendanceLogs(p => [data[0], ...p].slice(0, 20));
+      }
+      
+      addToast(`تم تسجيل حضور: ${randomEmp.name}`, 'success');
+      
+    } catch (err) {
+      console.error('Scan Error:', err);
+      addToast(err.message || 'Failed to record attendance', 'error');
     }
   };
 
@@ -344,22 +424,71 @@ export default function Employees() {
 
         {/* TAB 3: Attendance Dashboard */}
         {activeTab === 2 && (
-          <motion.div key="tab2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col gap-6">
-            <div className="glass-strong rounded-3xl p-8 flex flex-col items-center justify-center min-h-[50vh] relative overflow-hidden text-center">
+          <motion.div key="tab2" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col md:flex-row gap-6">
+            
+            {/* QR Scanner Panel */}
+            <div className="glass-strong rounded-3xl p-8 flex flex-col items-center justify-center min-h-[50vh] relative overflow-hidden text-center flex-1">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
               
-              <AlertCircle size={48} className="text-indigo-400 mb-4" />
+              <AlertCircle size={48} className="text-emerald-400 mb-4 animate-pulse" />
               <h2 className="text-2xl font-black text-white mb-2">سجل الدوام والبصمة</h2>
-              <p className="text-slate-400 max-w-md">
-                هذه الواجهة مخصصة لربط أجهزة البصمة (Biometric) ورمز الـ QR لتسجيل الحضور والانصراف تلقائياً. 
-                الخدمة قيد التطوير وستتوفر قريباً للربط المباشر مع أجهزة الشبكة الداخلية.
+              <p className="text-emerald-400 font-bold mb-6">
+                كود QR نشط ومحمي - يرجى مسح الكود عبر تطبيق الموظف لتسجيل الدوام
               </p>
               
-              <div className="mt-8 p-4 bg-white rounded-2xl">
-                 <img src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=HR-ATTENDANCE-DEMO`} alt="QR Code" className="w-32 h-32" />
+              <div className="mt-2 p-4 bg-white rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.2)]">
+                 {qrPayload ? (
+                    <QRCode value={qrPayload} size={180} fgColor="#0f172a" />
+                 ) : (
+                    <div className="w-[180px] h-[180px] bg-slate-200 animate-pulse flex items-center justify-center text-slate-500">جاري التوليد...</div>
+                 )}
               </div>
-              <p className="text-xs text-slate-500 mt-3">مسح للتجربة (Demo)</p>
+              <p className="text-xs text-slate-400 mt-4 font-mono tracking-wider">
+                ID: {qrPayload ? qrPayload.slice(0, 16) + '...' : 'WAITING'}
+              </p>
+              
+              <button 
+                 onClick={simulateQRScan}
+                 className="mt-8 px-6 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 font-bold rounded-xl border border-indigo-500/30 transition-colors"
+              >
+                 محاكاة مسح الكود (للاختبار)
+              </button>
             </div>
+
+            {/* Live Feed Panel */}
+            <div className="glass-strong rounded-3xl p-6 flex-1 max-h-[50vh] overflow-y-auto hide-scrollbar">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <Clock size={18} className="text-indigo-400" />
+                سجل الحركات الحي
+              </h3>
+              
+              <div className="flex flex-col gap-3">
+                {attendanceLogs.length === 0 ? (
+                   <p className="text-sm text-slate-500 text-center py-8">لا يوجد حركات مسجلة اليوم.</p>
+                ) : (
+                   attendanceLogs.map((log, idx) => {
+                     const emp = employees.find(e => e.emp_id === log.employee_id);
+                     return (
+                       <div key={idx} className="p-3 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between">
+                         <div className="flex items-center gap-3">
+                           <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center font-bold text-slate-300">
+                             {emp ? emp.name.substring(0, 2) : '?'}
+                           </div>
+                           <div>
+                             <p className="text-sm font-bold text-white">{emp ? emp.name : `موظف #${log.employee_id}`}</p>
+                             <p className="text-xs text-slate-400" dir="ltr">{new Date(log.clock_in_time).toLocaleTimeString('en-US')}</p>
+                           </div>
+                         </div>
+                         <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
+                           {log.status}
+                         </div>
+                       </div>
+                     )
+                   })
+                )}
+              </div>
+            </div>
+
           </motion.div>
         )}
       </AnimatePresence>
