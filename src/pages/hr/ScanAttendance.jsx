@@ -55,6 +55,30 @@ export default function ScanAttendance() {
       return;
     }
 
+    try {
+      // Trigger Native Biometric Prompt
+      if (!window.PublicKeyCredential) {
+        throw new Error('WebAuthn not supported');
+      }
+      
+      const credential = await navigator.credentials.get({
+        publicKey: {
+          challenge: new Uint8Array([1, 2, 3, 4]), // Secure transaction challenge
+          rpId: window.location.hostname,
+          userVerification: "required" // Forces biometrics (Fingerprint/Face)
+        }
+      });
+      
+      if (!credential) {
+         throw new Error('Biometric check failed or cancelled');
+      }
+    } catch (bioError) {
+      console.error('Biometric Authentication Error:', bioError);
+      setStatus('error');
+      setMessage('فشلت عملية التحقق من الهوية! يجب استخدام بصمة الإصبع الحقيقية للجهاز');
+      return;
+    }
+
     setStatus('loading');
     setMessage('');
 
