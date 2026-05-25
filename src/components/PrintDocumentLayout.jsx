@@ -132,12 +132,27 @@ export default function PrintDocumentLayout() {
       docTitle = 'بطاقة صنف مخزني';
       gridItems = [
         { label: 'رقم الصنف', value: data.item_id },
-        { label: 'اسم الصنف', value: data.name },
+        { label: 'اسم الصنف', value: data.name || data.item_name },
         { label: 'الكمية', value: data.quantity },
       ];
       amountField = 'سعر الوحدة';
       amountValue = data.unit_price;
       break;
+    case 'barcode':
+      return (
+        <div className="print-document-layout" dir="ltr" style={{ padding: '20px', textAlign: 'center', fontFamily: "'Inter', sans-serif" }}>
+          <div style={{ display: 'inline-block', border: '2px solid #000', padding: '16px', borderRadius: '8px', background: '#fff' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 'bold' }}>{data.item_name}</h3>
+            <img 
+               src={`https://barcode.tec-it.com/barcode.ashx?data=${encodeURIComponent(data.barcode)}&code=Code128&translate-esc=on`} 
+               alt="Barcode" 
+               style={{ height: '60px', width: 'auto', display: 'block', margin: '0 auto' }}
+            />
+            <p style={{ margin: '8px 0 0 0', fontSize: '12px', letterSpacing: '2px', fontWeight: 'bold' }}>{data.barcode}</p>
+            <p style={{ margin: '4px 0 0 0', fontSize: '12px', fontWeight: 'bold' }}>{formatCurrency(data.unit_price)}</p>
+          </div>
+        </div>
+      );
     default:
       docTitle = 'مستند طباعة تفصيلي';
       gridItems = Object.entries(data).map(([k, v]) => ({ label: k, value: v }));

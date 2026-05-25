@@ -269,9 +269,12 @@ body.lang-en {
     margin: 16mm 12mm;
   }
 
-  html, body, #root {
+  html, body, #root, .print-document-layout {
     height: auto !important;
     overflow: visible !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    position: relative !important;
   }
 
   body {
