@@ -11,17 +11,7 @@ import {
 
 /* ── Currency formatter using ₪ ── */
 function fmt(n) {
-  if (n === null || n === undefined) return '—';
-  const abs = Math.abs(n);
-  let display;
-  if (abs >= 1_000_000) {
-    display = (n / 1_000_000).toFixed(2) + 'M';
-  } else if (abs >= 1_000) {
-    display = (n / 1_000).toFixed(1) + 'K';
-  } else {
-    display = n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-  return '₪' + display;
+  return new Intl.NumberFormat('ar-PS', { style: 'currency', currency: 'ILS' }).format(Number(n) || 0);
 }
 
 /* ── Skeleton shimmer for loading cards ── */
@@ -80,12 +70,12 @@ export default function Dashboard() {
       try {
         const [salesRes, purchasesRes, payrollRes, customersRes, inventoryRes, employeesRes] =
           await Promise.allSettled([
-            supabase.from('sales').select('*').order('invoice_id', { ascending: false }),
-            supabase.from('purchases').select('*').order('invoice_id', { ascending: false }),
-            supabase.from('payroll').select('*'),
-            supabase.from('customers').select('*'),
-            supabase.from('inventory').select('*'),
-            supabase.from('employees').select('*'),
+            supabase.from('sales').select('amount, total_amount, status, invoice_id').order('invoice_id', { ascending: false }),
+            supabase.from('purchases').select('amount, total_amount, invoice_id').order('invoice_id', { ascending: false }),
+            supabase.from('payroll').select('amount, net_salary, salary'),
+            supabase.from('customers').select('*', { count: 'exact', head: true }),
+            supabase.from('inventory').select('quantity', { count: 'exact' }),
+            supabase.from('employees').select('*', { count: 'exact', head: true }),
           ]);
 
         const salesData     = (salesRes.status     === 'fulfilled' && !salesRes.value.error)     ? (salesRes.value.data     ?? []) : [];
@@ -113,10 +103,10 @@ export default function Dashboard() {
           (sum, item) => sum + (Number(item.net_salary) || Number(item.amount) || Number(item.salary) || 0), 0
         );
 
-        const totalCustomers    = customersData.length;
-        const employeeCount     = employeesData.length;
+        const totalCustomers    = customersRes.status === 'fulfilled' ? customersRes.value.count || 0 : 0;
+        const employeeCount     = employeesRes.status === 'fulfilled' ? employeesRes.value.count || 0 : 0;
         const salesInvoiceCount = salesData.length;
-        const inventoryCount    = inventoryData.length;
+        const inventoryCount    = inventoryRes.status === 'fulfilled' ? inventoryRes.value.count || 0 : 0;
         const unpaidInvoices    = salesData.filter(r => r.status === 'غير مدفوع').length;
         const lowStockItems     = inventoryData.filter(r => Number(r.quantity) < 20).length;
         const recentInvoices    = salesData.slice(0, 5);

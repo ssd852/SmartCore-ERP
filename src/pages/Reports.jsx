@@ -30,25 +30,28 @@ export default function Reports() {
           salesRes, purchasesRes, payrollRes,
           suppliersRes, customersRes, inventoryRes, employeesRes,
         ] = await Promise.allSettled([
-          supabase.from('sales').select('*'),
-          supabase.from('purchases').select('*'),
-          supabase.from('payroll').select('*'),
-          supabase.from('suppliers').select('*'),
-          supabase.from('customers').select('*'),
-          supabase.from('inventory').select('*'),
-          supabase.from('employees').select('*'),
+          supabase.from('sales').select('amount, total_amount, status'),
+          supabase.from('purchases').select('amount, total_amount'),
+          supabase.from('payroll').select('net_salary, basic_salary, emp_id, month_year').order('id', { ascending: false }).limit(6),
+          supabase.from('suppliers').select('*', { count: 'exact', head: true }),
+          supabase.from('customers').select('*', { count: 'exact', head: true }),
+          supabase.from('inventory').select('*', { count: 'exact', head: true }),
+          supabase.from('employees').select('*', { count: 'exact', head: true }),
         ]);
 
         const ok = (res) =>
           res.status === 'fulfilled' && !res.value.error ? (res.value.data ?? []) : [];
+        const okCount = (res) =>
+          res.status === 'fulfilled' && !res.value.error ? (res.value.count || 0) : 0;
 
         const salesData     = ok(salesRes);
         const purchasesData = ok(purchasesRes);
         const payrollData   = ok(payrollRes);
-        const suppliersData = ok(suppliersRes);
-        const customersData = ok(customersRes);
-        const inventoryData = ok(inventoryRes);
-        const employeesData = ok(employeesRes);
+        
+        const suppliersCount = okCount(suppliersRes);
+        const customersCount = okCount(customersRes);
+        const inventoryCount = okCount(inventoryRes);
+        const employeesCount = okCount(employeesRes);
 
         /* ── Aggregations ── */
         const totalSales = salesData.reduce(
@@ -71,7 +74,7 @@ export default function Reports() {
         });
 
         /* ── Payroll table rows (latest 6) ── */
-        const payrollRows = payrollData.slice(0, 6).map(p => ({
+        const payrollRows = payrollData.map(p => ({
           emp_id:     p.emp_id     ?? '—',
           month_year: p.month_year ?? '—',
           net_salary: Number(p.net_salary) || Number(p.basic_salary) || 0,
@@ -79,12 +82,12 @@ export default function Reports() {
 
         /* ── Counts ── */
         const counts = {
-          suppliers: suppliersData.length,
-          customers: customersData.length,
-          inventory: inventoryData.length,
-          employees: employeesData.length,
-          sales:     salesData.length,
-          purchases: purchasesData.length,
+          suppliers: suppliersCount,
+          customers: customersCount,
+          inventory: inventoryCount,
+          employees: employeesCount,
+          sales:     salesRes.status === 'fulfilled' ? (salesRes.value.count || salesData.length) : 0,
+          purchases: purchasesRes.status === 'fulfilled' ? (purchasesRes.value.count || purchasesData.length) : 0,
         };
 
         setStats({ totalSales, totalPurchases, totalPayroll, netProfit, salesByStatus, payrollRows, counts });
@@ -99,7 +102,7 @@ export default function Reports() {
   }, []);
 
   const { totalSales, totalPurchases, totalPayroll, netProfit, salesByStatus, payrollRows, counts } = stats;
-  const fmt = (n) => formatCurrency(n);
+  const fmt = (n) => new Intl.NumberFormat('ar-PS', { style: 'currency', currency: 'ILS' }).format(Number(n) || 0);
 
   return (
     <div className="flex flex-col gap-6">
