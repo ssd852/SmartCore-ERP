@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layout/MainLayout';
 import PrintDocumentLayout from './components/PrintDocumentLayout';
 import SubscriptionGuard from './components/SubscriptionGuard';
+import SuperAdminGuard from './components/SuperAdminGuard';
 
 // Pages
 import Login            from './pages/Login';
@@ -83,8 +84,8 @@ export default function App() {
                   <Route path="/payroll"    element={<SubscriptionGuard isCore={true}><Payroll /></SubscriptionGuard>} />
                   {/* Reports & Tools */}
                   <Route path="/reports"    element={<SubscriptionGuard><Reports /></SubscriptionGuard>} />
-                  <Route path="/sql"        element={<SubscriptionGuard><UltraSqlTerminal /></SubscriptionGuard>} />
-                  <Route path="/data-mgmt"  element={<SubscriptionGuard><DataManagement /></SubscriptionGuard>} />
+                  <Route path="/sql"        element={<SuperAdminGuard><SubscriptionGuard><UltraSqlTerminal /></SubscriptionGuard></SuperAdminGuard>} />
+                  <Route path="/data-mgmt"  element={<SuperAdminGuard><SubscriptionGuard><DataManagement /></SubscriptionGuard></SuperAdminGuard>} />
                 </Route>
 
                 {/* Catch-all */}

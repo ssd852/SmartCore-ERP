@@ -14,6 +14,9 @@ export function AppProvider({ children }) {
   // Developer Mode state
   const [isDevMode, setIsDevModeState] = useState(() => localStorage.getItem('erp-dev-mode') === 'true');
   
+  // Auth User state
+  const [authUser, setAuthUser] = useState(null);
+  
   // SaaS Tenant Profile state
   const [tenantProfile, setTenantProfile] = useState(null);
   
@@ -80,7 +83,8 @@ export function AppProvider({ children }) {
     const fetchTenant = async () => {
       if (!supabaseReady) return;
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
+      if (session?.user) {
+        setAuthUser(session.user);
         const { data, error } = await supabase
           .from('tenants')
           .select('*')
@@ -95,8 +99,10 @@ export function AppProvider({ children }) {
 
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        setAuthUser(session.user);
         fetchTenant();
       } else if (event === 'SIGNED_OUT') {
+        setAuthUser(null);
         setTenantProfile(null);
       }
     });
@@ -114,6 +120,7 @@ export function AppProvider({ children }) {
       sidebarOpen, setSidebarOpen,
       sidebarCollapsed, setSidebarCollapsed,
       isDevMode, setIsDevMode,
+      authUser, setAuthUser,
       printDoc, printDocument,
       tenantProfile, setTenantProfile,
     }}>
