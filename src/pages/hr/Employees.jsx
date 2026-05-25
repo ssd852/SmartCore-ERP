@@ -82,6 +82,7 @@ export default function Employees() {
   // Attendance & QR State
   const [qrPayload, setQrPayload] = useState('');
   const [attendanceLogs, setAttendanceLogs] = useState([]);
+  const [advances, setAdvances] = useState([]);
   const [tenantId, setTenantId] = useState('');
 
   // Widescreen Mode & Fetch Data
@@ -105,10 +106,11 @@ export default function Employees() {
       
       if (!currentTenant) throw new Error('يرجى تسجيل الدخول أولاً');
       
-      const [empRes, payRes, attRes] = await Promise.all([
+      const [empRes, payRes, attRes, advRes] = await Promise.all([
         supabase.from('employees').select('*').eq('tenant_id', currentTenant).order('emp_id', { ascending: false }),
         supabase.from('payroll').select('*').eq('tenant_id', currentTenant).order('payroll_id', { ascending: false }),
-        supabase.from('attendance_logs').select('*').eq('tenant_id', currentTenant).order('clock_in_time', { ascending: false }).limit(20)
+        supabase.from('attendance_logs').select('*').eq('tenant_id', currentTenant).order('clock_in_time', { ascending: false }).limit(20),
+        supabase.from('advances_ledger').select('*').eq('tenant_id', currentTenant)
       ]);
       
       if (empRes.error) throw empRes.error;
@@ -118,6 +120,9 @@ export default function Employees() {
       setPayroll(payRes.data || []);
       if (!attRes.error) {
         setAttendanceLogs(attRes.data || []);
+      }
+      if (!advRes.error) {
+        setAdvances(advRes.data || []);
       }
     } catch (err) {
       console.error('Fetch HR Data Error:', err);
@@ -263,42 +268,24 @@ export default function Employees() {
     if (!selectedEmpForAdvance || !advanceAmount) return;
     setIsSaving(true);
     try {
-      // Find active payroll for current month or create one
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      let activePayroll = payroll.find(p => p.emp_id === selectedEmpForAdvance.emp_id && p.month_year === currentMonth);
+      if (!supabaseReady) throw new Error('Supabase is not configured.');
       
-      const newDeduction = Number(advanceAmount);
+      const newAdvance = {
+        emp_id: String(selectedEmpForAdvance.emp_id).trim(),
+        tenant_id: tenantId,
+        amount: Number(advanceAmount),
+        date: new Date().toISOString()
+      };
       
-      if (activePayroll) {
-        // Update existing
-        const updatedDeductions = (Number(activePayroll.deductions) || 0) + newDeduction;
-        const updatedNet = (Number(activePayroll.basic_salary) || 0) - updatedDeductions;
-        
-        const { error } = await supabase.from('payroll')
-          .update({ deductions: updatedDeductions, net_salary: updatedNet })
-          .eq('payroll_id', activePayroll.payroll_id)
-          .eq('tenant_id', tenantId);
-          
-        if (error) throw error;
-        setPayroll(p => p.map(r => r.payroll_id === activePayroll.payroll_id ? { ...r, deductions: updatedDeductions, net_salary: updatedNet } : r));
-      } else {
-        // Create new payroll record for the month
-        const basic = Number(selectedEmpForAdvance.salary) || 0;
-        const net = basic - newDeduction;
-        
-        const currentTenant = await getAuthUserId();
-        const payload = {
-           tenant_id: currentTenant,
-           emp_id: selectedEmpForAdvance.emp_id,
-           month_year: currentMonth,
-           basic_salary: basic,
-           deductions: newDeduction,
-           net_salary: net
-        };
-        
-        const { data: newRec, error } = await supabase.from('payroll').insert([payload]).select();
-        if (error) throw error;
-        if (newRec && newRec.length > 0) setPayroll(p => [newRec[0], ...p]);
+      const { data, error } = await supabase.from('advances_ledger').insert([newAdvance]).select();
+      
+      if (error) {
+         if (error.code === '42P01') throw new Error('جدول advances_ledger غير موجود في قاعدة البيانات');
+         throw error;
+      }
+      
+      if (data && data.length > 0) {
+        setAdvances(p => [...p, data[0]]);
       }
       
       addToast('تم تسجيل السلفة بنجاح', 'success');
@@ -306,7 +293,7 @@ export default function Employees() {
       setAdvanceAmount('');
       setAdvanceDesc('');
     } catch (err) {
-      addToast(err.message || 'Error recording advance', 'error');
+      addToast(err.message || 'فشلت عملية حفظ السلفة، يرجى التحقق من الاتصال', 'error');
     } finally {
       setIsSaving(false);
     }
@@ -317,17 +304,28 @@ export default function Employees() {
     const currentMonth = new Date().toISOString().slice(0, 7);
     return employees.map(emp => {
       const p = payroll.find(r => r.emp_id === emp.emp_id && r.month_year === currentMonth);
+      
+      const empAdvances = advances.filter(a => a.emp_id === emp.emp_id && (a.date || a.created_at || '').startsWith(currentMonth));
+      const totalAdvances = empAdvances.reduce((sum, a) => sum + (Number(a.amount) || 0), 0);
+      
+      const basic = Number(p?.basic_salary || emp?.salary || 0);
+      const manualDed = Number(p?.deductions || 0);
+      const totalDeductions = totalAdvances + manualDed;
+      const net = basic - totalDeductions;
+      
       return {
         emp_id: emp.emp_id,
         display_id: emp.display_id || emp.emp_id,
         name: emp.name,
-        basic_salary: emp.salary,
-        deductions: p ? p.deductions : 0,
-        net_salary: p ? p.net_salary : emp.salary,
+        basic_salary: basic,
+        advances: totalAdvances,
+        manual_deductions: manualDed,
+        total_deductions: totalDeductions,
+        net_salary: net,
         payroll_ref: p || null
       };
     });
-  }, [employees, payroll]);
+  }, [employees, payroll, advances]);
 
   return (
     <div className="relative min-h-screen flex flex-col gap-6 w-full max-w-full">
@@ -419,7 +417,7 @@ export default function Employees() {
                         <td className="font-mono text-slate-400">{row.emp_id}</td>
                         <td className="font-bold text-white">{row.name}</td>
                         <td className="font-mono text-slate-300">{formatCurrency(row.basic_salary)}</td>
-                        <td className="font-mono text-rose-400">{formatCurrency(row.deductions)}</td>
+                        <td className="font-mono text-rose-400">{formatCurrency(row.total_deductions)}</td>
                         <td className="font-mono font-bold text-emerald-400 bg-emerald-500/5">{formatCurrency(row.net_salary)}</td>
                         <td>
                           <div className="flex items-center gap-2">
