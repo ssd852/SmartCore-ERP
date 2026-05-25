@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
-import { Truck, Search, Plus, Loader2, AlertCircle, CheckCircle2, X, Wallet, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
+import { Truck, Search, Plus, Loader2, AlertCircle, CheckCircle2, X, Wallet, ChevronLeft, ChevronRight, Hash, Trash2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { supabase, supabaseReady } from '../../config/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -117,6 +117,22 @@ export default function Suppliers() {
     }
   };
 
+  const handleDeleteSupplier = async (supplierId) => {
+    if (!window.confirm('هل أنت متأكد من حذف المورد بشكل نهائي؟')) return;
+    
+    try {
+      if (!supabaseReady) throw new Error('Supabase is not configured.');
+      const { error } = await supabase.from('suppliers').delete().eq('id', supplierId);
+      if (error) throw error;
+      
+      setData(p => p.filter(s => s.id !== supplierId));
+      addToast('تم حذف المورد وتنظيف الحساب بنجاح! ₪', 'success');
+    } catch (err) {
+      console.error('Delete Supplier Error:', err);
+      addToast(err.message || 'فشل في حذف المورد', 'error');
+    }
+  };
+
   const filteredData = data.filter(s => 
     (s.name && s.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (s.company_name && s.company_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -214,17 +230,26 @@ export default function Suppliers() {
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                             : 'bg-slate-800 text-slate-400 border-slate-700'
                       }`}>
-                        {new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR' }).format(Number(sup.current_balance))}
+                        {Number(sup.current_balance).toLocaleString('en-US', { minimumFractionDigits: 2 })} ₪
                       </div>
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <button 
-                        onClick={() => { setSelectedSupplier(sup); setShowPaymentModal(true); }}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-xl font-bold text-xs transition-colors"
-                      >
-                        <Wallet size={14} />
-                        تسجيل دفعة
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => { setSelectedSupplier(sup); setShowPaymentModal(true); }}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500 hover:text-white rounded-xl font-bold text-xs transition-colors"
+                        >
+                          <Wallet size={14} />
+                          تسجيل دفعة
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteSupplier(sup.id)}
+                          className="p-2 text-slate-500 hover:bg-red-500/20 hover:text-red-500 rounded-xl transition-colors"
+                          title="حذف المورد"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -320,13 +345,13 @@ export default function Suppliers() {
               <div className="bg-slate-950 rounded-xl p-4 mb-6 border border-slate-800 text-center">
                 <div className="text-xs font-bold text-slate-500 mb-1">الرصيد الحالي للمورد</div>
                 <div className="text-xl font-black text-amber-400" dir="ltr">
-                  {new Intl.NumberFormat('ar-SA', { style: 'currency', currency: 'SAR' }).format(Number(selectedSupplier.current_balance))}
+                  {Number(selectedSupplier.current_balance).toLocaleString('en-US', { minimumFractionDigits: 2 })} ₪
                 </div>
               </div>
 
               <form onSubmit={handleProcessPayment} className="flex flex-col gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-2">المبلغ المدفوع (SAR)</label>
+                  <label className="block text-xs font-bold text-slate-400 mb-2">المبلغ المدفوع (₪)</label>
                   <input 
                     type="number" 
                     step="any" 
