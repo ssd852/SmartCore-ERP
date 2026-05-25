@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase, supabaseReady } from '../config/supabaseClient';
 import i18n from '../i18n/index';
 
@@ -17,6 +17,15 @@ export function AppProvider({ children }) {
   // Auth User state
   const [authUser, setAuthUser] = useState(null);
   
+  // Calculate dynamic user role based on metadata and whitelist
+  const userRole = useMemo(() => {
+    if (!authUser) return null;
+    const email = authUser.email?.toLowerCase() || '';
+    const whitelist = ['mohammadnaseraldeen26@gmail.com', 'mohammadnaseraldeen25@gmail.com'];
+    if (whitelist.includes(email)) return 'Superadmin';
+    return authUser.user_metadata?.role || 'Admin'; // fallback to Admin
+  }, [authUser]);
+
   // SaaS Tenant Profile state
   const [tenantProfile, setTenantProfile] = useState(null);
   
@@ -121,6 +130,7 @@ export function AppProvider({ children }) {
       sidebarCollapsed, setSidebarCollapsed,
       isDevMode, setIsDevMode,
       authUser, setAuthUser,
+      userRole,
       printDoc, printDocument,
       tenantProfile, setTenantProfile,
     }}>

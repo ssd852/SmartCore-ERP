@@ -41,13 +41,12 @@ export default function CrudTable({
   onPrint,        // optional: (row) => void — renders a print button per row
 }) {
   const { t } = useTranslation();
-  const { lang } = useApp();
+  const { lang, userRole } = useApp();
 
-  const userRole = localStorage.getItem('userRole') || 'Admin';
-  const isAuditor = userRole === 'Auditor';
-  const effectiveAddForm = isAuditor ? null : addForm;
-  const effectiveEditForm = isAuditor ? null : editForm;
-  const effectiveOnDelete = isAuditor ? null : onDelete;
+  const isAccountant = userRole === 'Accountant';
+  const effectiveAddForm = addForm;
+  const effectiveEditForm = editForm;
+  const effectiveOnDelete = onDelete;
   const hasActions = !!(effectiveEditForm || effectiveAddForm || effectiveOnDelete || onPrint);
 
   const [search, setSearch] = useState('');

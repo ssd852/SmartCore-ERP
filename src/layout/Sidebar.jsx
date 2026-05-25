@@ -84,20 +84,22 @@ const groupBg = {
 
 export default function Sidebar() {
   const { t } = useTranslation();
-  const { lang, sidebarCollapsed, isDevMode, setIsDevMode, authUser } = useApp();
+  const { lang, sidebarCollapsed, isDevMode, setIsDevMode, userRole } = useApp();
   const location = useLocation();
   
-  const userRole = localStorage.getItem('userRole') || 'Admin';
-  
-  const whitelistedEmails = [
-    'mohammadnaseraldeen26@gmail.com',
-    'mohammadnaseraldeen25@gmail.com'
-  ];
-  const isSuperAdmin = authUser?.email && whitelistedEmails.includes(authUser.email.toLowerCase());
+  const isSuperAdmin = userRole === 'Superadmin';
+  const isAdmin = userRole === 'Admin';
+  const isAccountant = userRole === 'Accountant';
 
   const visibleGroups = menuGroups.filter(g => {
-    if (g.key === 'system_tools') return isSuperAdmin;
-    return true;
+    if (isSuperAdmin) return true;
+    if (isAdmin) {
+      return g.key !== 'system_tools';
+    }
+    if (isAccountant) {
+      return ['dashboard', 'finance_sales', 'reports'].includes(g.key);
+    }
+    return false;
   });
 
   const [openGroups, setOpenGroups] = useState(() =>

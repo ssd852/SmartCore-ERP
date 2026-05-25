@@ -9,6 +9,7 @@ import MainLayout from './layout/MainLayout';
 import PrintDocumentLayout from './components/PrintDocumentLayout';
 import SubscriptionGuard from './components/SubscriptionGuard';
 import SuperAdminGuard from './components/SuperAdminGuard';
+import RoleGuard from './components/RoleGuard';
 
 // Pages
 import Login            from './pages/Login';
@@ -68,20 +69,23 @@ export default function App() {
                 {/* Protected — uses MainLayout with sidebar/topbar */}
                 <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
                   <Route path="/"           element={<Dashboard />} />
-                  {/* Supply */}
-                  <Route path="/inventory"  element={<SubscriptionGuard isCore={true}><Inventory /></SubscriptionGuard>} />
-                  <Route path="/purchases"  element={<SubscriptionGuard><PurchaseInvoices /></SubscriptionGuard>} />
-                  <Route path="/suppliers"  element={<SubscriptionGuard><Suppliers /></SubscriptionGuard>} />
-                  {/* Finance */}
+                  {/* Supply & Inventory */}
+                  <Route path="/inventory"  element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard isCore={true}><Inventory /></SubscriptionGuard></RoleGuard>} />
+                  <Route path="/purchases"  element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard><PurchaseInvoices /></SubscriptionGuard></RoleGuard>} />
+                  <Route path="/suppliers"  element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard><Suppliers /></SubscriptionGuard></RoleGuard>} />
+                  
+                  {/* Finance & Sales */}
                   <Route path="/invoices"   element={<SubscriptionGuard><SalesInvoices /></SubscriptionGuard>} />
                   <Route path="/customers"  element={<SubscriptionGuard><Customers /></SubscriptionGuard>} />
                   <Route path="/checks"     element={<SubscriptionGuard><Checks /></SubscriptionGuard>} />
                   <Route path="/accounts"   element={<SubscriptionGuard><ChartOfAccounts /></SubscriptionGuard>} />
                   <Route path="/journal"    element={<SubscriptionGuard isCore={true}><JournalEntries /></SubscriptionGuard>} />
-                  {/* HR */}
-                  <Route path="/assets"     element={<SubscriptionGuard><FixedAssets /></SubscriptionGuard>} />
-                  <Route path="/employees"  element={<SubscriptionGuard><Employees /></SubscriptionGuard>} />
-                  <Route path="/payroll"    element={<SubscriptionGuard isCore={true}><Payroll /></SubscriptionGuard>} />
+                  
+                  {/* HR & Assets */}
+                  <Route path="/assets"     element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard><FixedAssets /></SubscriptionGuard></RoleGuard>} />
+                  <Route path="/employees"  element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard><Employees /></SubscriptionGuard></RoleGuard>} />
+                  <Route path="/payroll"    element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard isCore={true}><Payroll /></SubscriptionGuard></RoleGuard>} />
+                  
                   {/* Reports & Tools */}
                   <Route path="/reports"    element={<SubscriptionGuard><Reports /></SubscriptionGuard>} />
                   <Route path="/sql"        element={<SuperAdminGuard><SubscriptionGuard><UltraSqlTerminal /></SubscriptionGuard></SuperAdminGuard>} />

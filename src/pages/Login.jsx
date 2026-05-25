@@ -178,16 +178,20 @@ export default function Login() {
       }
 
       if (isRegistering) {
-        const { error: signUpErr } = await supabase.auth.signUp({ email, password });
+        const { error: signUpErr } = await supabase.auth.signUp({ 
+          email, 
+          password,
+          options: {
+            data: { role: role }
+          }
+        });
         if (signUpErr) throw signUpErr;
-        localStorage.setItem('userRole', role);
         setSuccessMsg(lang === 'ar' ? 'تم إنشاء الحساب! جاري التوجيه...' : 'Account created! Redirecting...');
         setTimeout(() => navigate('/'), 1400);
       } else {
         const { data, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
         if (signInErr) throw signInErr;
         if (data?.user) {
-          localStorage.setItem('userRole', role);
           navigate('/');
         }
       }
@@ -329,8 +333,7 @@ export default function Login() {
               <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/5">
                 {[
                   { value: 'Admin', label: lang === 'ar' ? 'مدير النظام' : 'Admin' },
-                  { value: 'Accountant', label: lang === 'ar' ? 'محاسب' : 'Accountant' },
-                  { value: 'Auditor', label: lang === 'ar' ? 'مدقق' : 'Auditor' }
+                  { value: 'Accountant', label: lang === 'ar' ? 'محاسب' : 'Accountant' }
                 ].map(r => (
                   <button
                     key={r.value}
@@ -348,10 +351,9 @@ export default function Login() {
               </div>
             </div>
 
-            {/* Conditional Role Password */}
-            {role !== 'Auditor' && (
-              <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1.5 ms-0.5">
+            {/* Role Password */}
+            <div>
+              <label className="block text-xs font-bold text-slate-400 mb-1.5 ms-0.5">
                   {lang === 'ar' ? 'كلمة مرور الصلاحية' : 'Role Password'}
                 </label>
                 <div className="relative">
@@ -366,9 +368,8 @@ export default function Login() {
                     placeholder={lang === 'ar' ? 'أدخل كلمة مرور الصلاحية...' : 'Enter role PIN...'}
                     required
                   />
-                </div>
               </div>
-            )}
+            </div>
 
             {/* Email */}
             <div>
