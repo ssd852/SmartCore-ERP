@@ -88,6 +88,7 @@ export default function Employees() {
   useEffect(() => {
     setSidebarCollapsed(true);
     fetchData();
+    return () => setSidebarCollapsed(false);
   }, []);
 
   const fetchData = async () => {
@@ -105,9 +106,9 @@ export default function Employees() {
       if (!currentTenant) throw new Error('يرجى تسجيل الدخول أولاً');
       
       const [empRes, payRes, attRes] = await Promise.all([
-        supabase.from('employees').select('*').eq('user_id', currentTenant).order('emp_id', { ascending: false }),
-        supabase.from('payroll').select('*').eq('user_id', currentTenant).order('payroll_id', { ascending: false }),
-        supabase.from('attendance_logs').select('*').eq('user_id', currentTenant).order('clock_in_time', { ascending: false }).limit(20)
+        supabase.from('employees').select('*').eq('tenant_id', currentTenant).order('emp_id', { ascending: false }),
+        supabase.from('payroll').select('*').eq('tenant_id', currentTenant).order('payroll_id', { ascending: false }),
+        supabase.from('attendance_logs').select('*').eq('tenant_id', currentTenant).order('clock_in_time', { ascending: false }).limit(20)
       ]);
       
       if (empRes.error) throw empRes.error;
@@ -161,7 +162,7 @@ export default function Employees() {
         event: 'INSERT', 
         schema: 'public', 
         table: 'attendance_logs',
-        filter: `user_id=eq.${tenantId}`
+        filter: `tenant_id=eq.${tenantId}`
       }, (payload) => {
         setAttendanceLogs(prev => [payload.new, ...prev].slice(0, 20));
       })
@@ -184,11 +185,10 @@ export default function Employees() {
     
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const user_id = await getAuthUserId();
+      const currentTenant = await getAuthUserId();
       
       const newLog = {
-        user_id,
-        tenant_id: tenantId || user_id,
+        tenant_id: currentTenant,
         employee_id: randomEmp.emp_id,
         clock_in_time: new Date().toISOString(),
         status: '🟢 حضور'
@@ -222,14 +222,14 @@ export default function Employees() {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       
       if (row?.emp_id) {
-        const { error } = await supabase.from('employees').update(form).eq('emp_id', row.emp_id);
+        const { error } = await supabase.from('employees').update(form).eq('emp_id', row.emp_id).eq('tenant_id', tenantId);
         if (error) throw error;
         setEmployees(p => p.map(r => r.emp_id === row.emp_id ? { ...r, ...form } : r));
         addToast(t('edit') + ' ✓', 'info');
       } else {
-        const user_id = await getAuthUserId();
+        const currentTenant = await getAuthUserId();
         const maxLocalId = Math.max(0, ...employees.map(e => e.tenant_emp_id || 0));
-        const payload = { ...form, user_id, tenant_emp_id: maxLocalId + 1 };
+        const payload = { ...form, tenant_id: currentTenant, tenant_emp_id: maxLocalId + 1 };
         const { data: newRecords, error } = await supabase.from('employees').insert([payload]).select();
         if (error) throw error;
         if (newRecords && newRecords.length > 0) {
@@ -249,7 +249,7 @@ export default function Employees() {
 
   const handleDeleteEmployee = async (row) => {
     try {
-      const { error } = await supabase.from('employees').delete().eq('emp_id', row.emp_id);
+      const { error } = await supabase.from('employees').delete().eq('emp_id', row.emp_id).eq('tenant_id', tenantId);
       if (error) throw error;
       setEmployees(p => p.filter(r => r.emp_id !== row.emp_id));
       addToast(t('delete') + ' ✓', 'warning');
@@ -277,7 +277,8 @@ export default function Employees() {
         
         const { error } = await supabase.from('payroll')
           .update({ deductions: updatedDeductions, net_salary: updatedNet })
-          .eq('payroll_id', activePayroll.payroll_id);
+          .eq('payroll_id', activePayroll.payroll_id)
+          .eq('tenant_id', tenantId);
           
         if (error) throw error;
         setPayroll(p => p.map(r => r.payroll_id === activePayroll.payroll_id ? { ...r, deductions: updatedDeductions, net_salary: updatedNet } : r));
@@ -286,9 +287,9 @@ export default function Employees() {
         const basic = Number(selectedEmpForAdvance.salary) || 0;
         const net = basic - newDeduction;
         
-        const user_id = await getAuthUserId();
+        const currentTenant = await getAuthUserId();
         const payload = {
-           user_id,
+           tenant_id: currentTenant,
            emp_id: selectedEmpForAdvance.emp_id,
            month_year: currentMonth,
            basic_salary: basic,
