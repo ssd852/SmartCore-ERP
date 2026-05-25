@@ -9,7 +9,7 @@ import { supabase, supabaseReady } from '../../config/supabaseClient';
 import { getAuthUserId } from '../../utils/getAuthUserId';
 import { formatCurrency } from '../../utils/currencyFormatter';
 import { motion, AnimatePresence } from 'framer-motion';
-import QRCode from 'react-qr-code';
+import { QRCodeSVG } from 'qrcode.react';
 
 const DEPARTMENTS = ['المالية', 'المحاسبة', 'الموارد البشرية', 'التقنية', 'المبيعات', 'الإدارة'];
 
@@ -438,21 +438,32 @@ export default function Employees() {
               
               <div className="mt-2 p-4 bg-white rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.2)]">
                  {qrPayload ? (
-                    <QRCode value={qrPayload} size={180} fgColor="#0f172a" />
+                    <QRCodeSVG value={qrPayload} size={180} fgColor="#0f172a" />
                  ) : (
                     <div className="w-[180px] h-[180px] bg-slate-200 animate-pulse flex items-center justify-center text-slate-500">جاري التوليد...</div>
                  )}
               </div>
               <p className="text-xs text-slate-400 mt-4 font-mono tracking-wider">
-                ID: {qrPayload ? qrPayload.slice(0, 16) + '...' : 'WAITING'}
+                ID: {qrPayload ? String(qrPayload).slice(0, 16) + '...' : 'WAITING'}
               </p>
               
-              <button 
-                 onClick={simulateQRScan}
-                 className="mt-8 px-6 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 font-bold rounded-xl border border-indigo-500/30 transition-colors"
-              >
-                 محاكاة مسح الكود (للاختبار)
-              </button>
+              <div className="flex items-center gap-3 mt-8">
+                 <button 
+                    onClick={simulateQRScan}
+                    className="px-6 py-2.5 bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 font-bold rounded-xl border border-indigo-500/30 transition-colors"
+                 >
+                    محاكاة مسح الكود (للاختبار)
+                 </button>
+                 <button 
+                    onClick={() => printDocument('qr_attendance', { 
+                       tenant_id: tenantId, 
+                       url: window.location.origin + '/#/scan-attendance?tenant=' + tenantId 
+                    })}
+                    className="px-6 py-2.5 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-400 font-bold rounded-xl border border-emerald-500/30 transition-colors flex items-center gap-2"
+                 >
+                    <Printer size={16} /> طباعة كود الـ QR للبرواز
+                 </button>
+              </div>
             </div>
 
             {/* Live Feed Panel */}

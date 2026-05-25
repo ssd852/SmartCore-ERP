@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/currencyFormatter';
 
 import { X } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 export default function PrintDocumentLayout() {
   const { printDoc, tenantProfile } = useApp();
@@ -161,6 +162,25 @@ export default function PrintDocumentLayout() {
             />
             <p style={{ margin: '8px 0 0 0', fontSize: '12px', letterSpacing: '2px', fontWeight: 'bold' }}>{data.barcode}</p>
             <p style={{ margin: '4px 0 0 0', fontSize: '12px', fontWeight: 'bold' }}>{formatCurrency(data.unit_price)}</p>
+          </div>
+        </div>
+      );
+    case 'qr_attendance':
+      return (
+        <div className="print-document-layout" dir="rtl" style={{ padding: '40px', textAlign: 'center', fontFamily: "'Tajawal', sans-serif", background: '#fff', color: '#000', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ marginBottom: '40px' }}>
+            {companyLogo && <img src={companyLogo} alt="Logo" style={{ height: '80px', margin: '0 auto 16px auto', display: 'block' }} />}
+            <h1 style={{ fontSize: '36px', fontWeight: 'bold', margin: '0 0 8px 0', color: '#000' }}>{companyName}</h1>
+            <p style={{ fontSize: '18px', margin: '0', color: '#333' }}>{companyAddress}</p>
+          </div>
+          
+          <div style={{ border: '4px solid #000', padding: '32px', borderRadius: '16px', background: '#fff', marginBottom: '40px' }}>
+             <QRCodeSVG value={data.url} size={400} fgColor="#000" />
+          </div>
+          
+          <div>
+             <h2 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 16px 0', color: '#000' }}>نظام تسجيل الدوام الذكي</h2>
+             <p style={{ fontSize: '20px', margin: '0', color: '#333' }}>يرجى مسح الكود عبر الهاتف لتسجيل الحضور والانصراف</p>
           </div>
         </div>
       );
