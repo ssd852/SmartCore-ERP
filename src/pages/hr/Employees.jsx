@@ -114,7 +114,7 @@ export default function Employees() {
       if (empRes.error) throw empRes.error;
       if (payRes.error) throw payRes.error;
 
-      setEmployees(empRes.data?.map(e => ({ ...e, display_id: e.tenant_emp_id || e.emp_id })) || []);
+      setEmployees(empRes.data?.map(e => ({ ...e, display_id: e.emp_id })) || []);
       setPayroll(payRes.data || []);
       if (!attRes.error) {
         setAttendanceLogs(attRes.data || []);
@@ -215,25 +215,24 @@ export default function Employees() {
     }
   };
 
-  // Profile Save
   const handleSaveEmployee = async (form, row, onClose) => {
     setIsSaving(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       
-      if (row?.emp_id) {
-        const { error } = await supabase.from('employees').update(form).eq('emp_id', row.emp_id).eq('tenant_id', tenantId);
+      if (row?.id) {
+        const { error } = await supabase.from('employees').update(form).eq('id', row.id).eq('tenant_id', tenantId);
         if (error) throw error;
-        setEmployees(p => p.map(r => r.emp_id === row.emp_id ? { ...r, ...form } : r));
+        setEmployees(p => p.map(r => r.id === row.id ? { ...r, ...form } : r));
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const currentTenant = await getAuthUserId();
-        const maxLocalId = Math.max(0, ...employees.map(e => e.tenant_emp_id || 0));
-        const payload = { ...form, tenant_id: currentTenant, tenant_emp_id: maxLocalId + 1 };
+        const maxLocalId = Math.max(0, ...employees.map(e => parseInt(e.emp_id, 10) || 0));
+        const payload = { ...form, tenant_id: currentTenant, emp_id: String(maxLocalId + 1) };
         const { data: newRecords, error } = await supabase.from('employees').insert([payload]).select();
         if (error) throw error;
         if (newRecords && newRecords.length > 0) {
-           const newEmp = { ...newRecords[0], display_id: newRecords[0].tenant_emp_id || newRecords[0].emp_id };
+           const newEmp = { ...newRecords[0], display_id: newRecords[0].emp_id };
            setEmployees(p => [newEmp, ...p]);
         }
         else await fetchData();
@@ -249,9 +248,9 @@ export default function Employees() {
 
   const handleDeleteEmployee = async (row) => {
     try {
-      const { error } = await supabase.from('employees').delete().eq('emp_id', row.emp_id).eq('tenant_id', tenantId);
+      const { error } = await supabase.from('employees').delete().eq('id', row.id).eq('tenant_id', tenantId);
       if (error) throw error;
-      setEmployees(p => p.filter(r => r.emp_id !== row.emp_id));
+      setEmployees(p => p.filter(r => r.id !== row.id));
       addToast(t('delete') + ' ✓', 'warning');
     } catch (err) {
       addToast(err.message || 'Failed to delete data', 'error');
@@ -417,7 +416,7 @@ export default function Employees() {
                   <tbody>
                     {payrollGridData.map(row => (
                       <tr key={row.emp_id}>
-                        <td className="font-mono text-slate-400">{row.display_id || row.emp_id}</td>
+                        <td className="font-mono text-slate-400">{row.emp_id}</td>
                         <td className="font-bold text-white">{row.name}</td>
                         <td className="font-mono text-slate-300">{formatCurrency(row.basic_salary)}</td>
                         <td className="font-mono text-rose-400">{formatCurrency(row.deductions)}</td>
