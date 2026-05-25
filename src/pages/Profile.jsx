@@ -27,21 +27,30 @@ export default function Profile() {
         setSessionUser(session.user);
         
         // Fetch employees for linking
-        const { data: emps } = await supabase
+        const { data: emps, error } = await supabase
           .from('employees')
           .select('id, emp_id, name, email')
-          .eq('tenant_id', session.user.id);
+          .eq('tenant_id', session.user.id)
+          .order('name');
           
-        if (emps) {
+        if (error) throw error;
+          
+        if (emps && emps.length > 0) {
           setEmployees(emps);
           // Auto-select if email matches
           const match = emps.find(e => e.email === session.user.email);
-          if (match) setSelectedEmpId(match.emp_id);
-          else if (emps.length > 0) setSelectedEmpId(emps[0].emp_id);
+          if (match) {
+            setSelectedEmpId(match.emp_id);
+          } else {
+            setSelectedEmpId(emps[0].emp_id);
+          }
+        } else {
+           setEmployees([]);
         }
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
+      addToast('فشل في تحميل بيانات الموظفين', 'error');
     }
   };
 
@@ -127,8 +136,8 @@ export default function Profile() {
             
             <div className="w-full space-y-3 mt-4 text-start">
               <div className="flex items-center gap-3 text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                <Mail size={16} className="text-slate-400" />
-                <span className="text-sm font-medium">{sessionUser?.email || 'جاري التحميل...'}</span>
+                <Mail size={16} className="text-slate-400 shrink-0" />
+                <span className="text-sm font-medium break-all">{sessionUser?.email || 'جاري التحميل...'}</span>
               </div>
               <div className="flex items-center gap-3 text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
                 <Shield size={16} className="text-slate-400" />
@@ -166,11 +175,14 @@ export default function Profile() {
                   <select 
                     value={selectedEmpId}
                     onChange={(e) => setSelectedEmpId(e.target.value)}
-                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2 text-sm focus:border-emerald-500 outline-none"
+                    className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg px-3 py-2.5 text-sm focus:border-emerald-500 outline-none shadow-inner"
+                    style={{ backgroundColor: '#0f172a' }}
                   >
-                    <option value="" disabled>-- اختر الموظف --</option>
+                    <option value="" disabled className="bg-slate-900 text-slate-400 py-2 px-3">-- اختر الموظف --</option>
                     {employees.map(e => (
-                      <option key={e.emp_id} value={e.emp_id}>{e.name} (ID: {e.emp_id})</option>
+                      <option key={e.emp_id} value={e.emp_id} className="bg-slate-900 text-white py-2 px-3">
+                        {e.name} (ID: {e.emp_id})
+                      </option>
                     ))}
                   </select>
                 </div>
