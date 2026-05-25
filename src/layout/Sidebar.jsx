@@ -43,7 +43,6 @@ const menuGroups = [
     items: [
       { key: 'fixed_assets', icon: Building,   path: '/assets' },
       { key: 'employees',    icon: UserCheck,  path: '/employees' },
-      { key: 'payroll',      icon: DollarSign, path: '/payroll' },
     ],
   },
   {

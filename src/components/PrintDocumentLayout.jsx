@@ -2,8 +2,19 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/currencyFormatter';
 
+import { X } from 'lucide-react';
+
 export default function PrintDocumentLayout() {
   const { printDoc, tenantProfile } = useApp();
+
+  const handleClosePrintFallback = () => {
+    document.body.classList.remove('print-single-mode');
+    // We cannot access setPrintDocState directly from AppContext if it's not exported,
+    // but the `afterprint` event should technically fire when window is closed.
+    // Let's force a reload or simply trigger a custom event that AppContext listens to?
+    // Wait, let's just dispatch an 'afterprint' event manually:
+    window.dispatchEvent(new Event('afterprint'));
+  };
 
   if (!printDoc) return null;
 
@@ -164,6 +175,15 @@ export default function PrintDocumentLayout() {
 
   return (
     <div className="print-document-layout" dir="rtl" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+      {/* Fallback close button for mobile WebKit if afterprint fails */}
+      <button 
+        onClick={handleClosePrintFallback}
+        className="no-print fixed top-4 right-4 z-[9999] bg-rose-600 text-white p-3 rounded-full shadow-2xl flex items-center gap-2 hover:bg-rose-700 transition-colors"
+      >
+        <X size={20} />
+        <span className="font-bold">إغلاق الطباعة</span>
+      </button>
+
       {/* Header */}
       <div style={{ borderBottom: '2px solid #cbd5e1', paddingBottom: '16px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {/* Company Details */}
