@@ -218,7 +218,7 @@ export default function Employees() {
     };
   }, [supabaseReady, tenantId]);
 
-  // Rotate QR Code Every 60 Seconds
+  // Rotate QR Code Every 10 Seconds
   useEffect(() => {
     if (activeTab !== 2 || !tenantId) return;
 
@@ -227,7 +227,7 @@ export default function Employees() {
       const payload = JSON.stringify({
         tenant_id: tenantId,
         timestamp: timestamp,
-        expires_at: timestamp + 60000 // 60 seconds validity
+        expires_at: timestamp + 10000 // 10 seconds validity
       });
       // In a real app, this should be a cryptographically signed JWT or HMAC
       const token = btoa(payload); 
@@ -236,30 +236,9 @@ export default function Employees() {
     };
 
     generatePayload();
-    const interval = setInterval(generatePayload, 60000);
+    const interval = setInterval(generatePayload, 10000);
     return () => clearInterval(interval);
   }, [activeTab, tenantId]);
-
-  // Supabase Realtime Subscription for 0ms Attendance Updates
-  useEffect(() => {
-    if (!supabaseReady || !tenantId) return;
-    
-    const channel = supabase
-      .channel('attendance_changes')
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'attendance_logs',
-        filter: `tenant_id=eq.${tenantId}`
-      }, (payload) => {
-        setAttendanceLogs(prev => [payload.new, ...prev].slice(0, 20));
-      })
-      .subscribe();
-      
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [tenantId]);
 
   // Simulate QR Scan
   const simulateQRScan = async () => {

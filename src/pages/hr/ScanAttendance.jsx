@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function ScanAttendance() {
   const [searchParams] = useSearchParams();
   const tenantId = searchParams.get('tenant');
+  const encodedToken = searchParams.get('token');
   
   const [currentTime, setCurrentTime] = useState(new Date());
   const [empId, setEmpId] = useState('');
@@ -20,6 +21,28 @@ export default function ScanAttendance() {
   }, []);
 
   const handlePunch = async (punchType) => {
+    if (!encodedToken) {
+      setStatus('error');
+      setMessage('الرمز مفقود! يرجى مسح رمز الـ QR من الشاشة مجدداً');
+      return;
+    }
+
+    try {
+      const payloadStr = atob(encodedToken);
+      const parsedToken = JSON.parse(payloadStr);
+
+      const timeDiffInSeconds = (Date.now() - parsedToken.timestamp) / 1000;
+      if (timeDiffInSeconds > 10 || parsedToken.tenant_id !== tenantId) {
+         setStatus('error');
+         setMessage('الرمز منتهي الصلاحية! يرجى المسح مباشرة من شاشة الإدارة');
+         return;
+      }
+    } catch (e) {
+      setStatus('error');
+      setMessage('الرمز غير صالح أو تم التلاعب به');
+      return;
+    }
+
     if (!empId) {
       setStatus('error');
       setMessage('الرجاء إدخال الرقم الوظيفي أولاً');
