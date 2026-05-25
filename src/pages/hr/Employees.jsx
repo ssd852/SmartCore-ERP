@@ -22,6 +22,7 @@ function EmployeeForm({ row, onClose, onSave, isSaving }) {
     position: row?.position || '',
     department: row?.department || DEPARTMENTS[0],
     salary: row?.salary ?? '',
+    email: row?.email || '',
   });
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
@@ -30,6 +31,10 @@ function EmployeeForm({ row, onClose, onSave, isSaving }) {
       <div>
         <label className="block text-xs font-bold text-slate-400 mb-1.5">{t('name')}</label>
         <input className="erp-input" value={form.name} onChange={e => set('name', e.target.value)} required disabled={isSaving} />
+      </div>
+      <div>
+        <label className="block text-xs font-bold text-slate-400 mb-1.5">البريد الإلكتروني</label>
+        <input type="email" className="erp-input bg-zinc-900 text-white" value={form.email} onChange={e => set('email', e.target.value)} required disabled={isSaving} />
       </div>
       <div>
         <label className="block text-xs font-bold text-slate-400 mb-1.5">{t('position')}</label>
