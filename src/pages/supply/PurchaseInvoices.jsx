@@ -25,11 +25,12 @@ function PurchaseInvoiceForm({ row, onClose, onSave, isSaving }) {
     async function fetchSuppliers() {
       try {
         if (!supabaseReady) return;
-        const { data, error } = await supabase.from('suppliers').select('supplier_id, company_name').order('company_name');
+        // Fetch new suppliers schema: id and name
+        const { data, error } = await supabase.from('suppliers').select('id, name, company_name').order('name');
         if (!error && data) {
           setSuppliers(data);
           if (!form.supplier_id && data.length > 0) {
-            set('supplier_id', data[0].supplier_id);
+            set('supplier_id', data[0].id);
           }
         }
       } catch (err) {
@@ -44,12 +45,12 @@ function PurchaseInvoiceForm({ row, onClose, onSave, isSaving }) {
   return (
     <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="flex flex-col gap-4">
       <div>
-        <label className="block text-xs font-bold text-slate-400 mb-1.5">{t('supplier_id')}</label>
+        <label className="block text-xs font-bold text-slate-400 mb-1.5">المورد</label>
         <select className="erp-select" value={form.supplier_id} onChange={e => set('supplier_id', e.target.value)} required disabled={isSaving || loadingSuppliers}>
           <option value="" disabled>-- اختر المورد --</option>
           {loadingSuppliers ? <option value="loading" disabled>{t('loading')}...</option> : null}
           {suppliers.map(sup => (
-            <option key={sup.supplier_id} value={sup.supplier_id}>{sup.company_name}</option>
+            <option key={sup.id} value={sup.id}>{sup.name} {sup.company_name ? `(${sup.company_name})` : ''}</option>
           ))}
         </select>
       </div>
@@ -95,7 +96,7 @@ export default function PurchaseInvoices() {
 
   const columns = [
     { key: 'invoice_id',   label: t('invoice_id') },
-    { key: 'supplier_id',  label: t('supplier_id') },
+    { key: 'supplier_id',  label: 'رقم المورد' },
     { key: 'invoice_date', label: t('date') },
     { key: 'total_amount', label: t('total_amount') },
     { key: 'status',       label: t('status') },
@@ -124,6 +125,7 @@ export default function PurchaseInvoices() {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       
       if (row?.invoice_id) {
+        // If editing an existing invoice, we skip balance sync for now (complex refund logic)
         const { error } = await supabase.from('purchases').update(form).eq('invoice_id', row.invoice_id);
         if (error) throw error;
         setData(p => p.map(r => r.invoice_id === row.invoice_id ? { ...r, ...form } : r));
@@ -133,6 +135,16 @@ export default function PurchaseInvoices() {
         const payload = { ...form, user_id };
         const { data: newRecords, error } = await supabase.from('purchases').insert([payload]).select();
         if (error) throw error;
+
+        // Automatically sync the supplier ledger balance
+        if (form.supplier_id && form.total_amount && form.status !== 'مدفوع') {
+           const { error: ledgerError } = await supabase.rpc('increment_supplier_balance', { 
+             p_supplier_id: form.supplier_id, 
+             p_amount: Number(form.total_amount) 
+           });
+           if (ledgerError) console.error("Ledger sync error:", ledgerError);
+        }
+
         if (newRecords && newRecords.length > 0) setData(p => [newRecords[0], ...p]);
         else await fetchData();
         addToast(t('save') + ' ✓', 'success');
