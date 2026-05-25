@@ -137,7 +137,9 @@ export default function Employees() {
         expires_at: timestamp + 60000 // 60 seconds validity
       });
       // In a real app, this should be a cryptographically signed JWT or HMAC
-      setQrPayload(btoa(payload)); 
+      const token = btoa(payload); 
+      const attendanceURL = `${window.location.origin}/#/scan-attendance?tenant=${tenantId}&token=${token}`;
+      setQrPayload(attendanceURL);
     };
 
     generatePayload();
@@ -433,7 +435,7 @@ export default function Employees() {
               <AlertCircle size={48} className="text-emerald-400 mb-4 animate-pulse" />
               <h2 className="text-2xl font-black text-white mb-2">سجل الدوام والبصمة</h2>
               <p className="text-emerald-400 font-bold mb-6">
-                كود QR نشط ومحمي - يرجى مسح الكود عبر تطبيق الموظف لتسجيل الدوام
+                مسح كود الـ QR لتسجيل حضور وانصراف الموظفين عبر الهاتف
               </p>
               
               <div className="mt-2 p-4 bg-white rounded-2xl shadow-[0_0_40px_rgba(16,185,129,0.2)]">
@@ -443,8 +445,8 @@ export default function Employees() {
                     <div className="w-[180px] h-[180px] bg-slate-200 animate-pulse flex items-center justify-center text-slate-500">جاري التوليد...</div>
                  )}
               </div>
-              <p className="text-xs text-slate-400 mt-4 font-mono tracking-wider">
-                ID: {qrPayload ? String(qrPayload).slice(0, 16) + '...' : 'WAITING'}
+              <p className="text-xs text-slate-400 mt-4 font-mono tracking-wider break-all max-w-sm">
+                URL: {qrPayload ? String(qrPayload).slice(0, 45) + '...' : 'WAITING'}
               </p>
               
               <div className="flex items-center gap-3 mt-8">
