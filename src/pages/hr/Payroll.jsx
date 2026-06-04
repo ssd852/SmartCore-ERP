@@ -136,7 +136,7 @@ export default function Payroll() {
         
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
-          action: `قام بتعديل بيانات مسير الرواتب (معرف: ${row.payroll_id})`, 
+          action: `تم تعديل بيانات مسير الرواتب (معرف: ${row.payroll_id}) في النظام.`, 
           module: 'payroll' 
         }]);
 
@@ -155,7 +155,7 @@ export default function Payroll() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام باعتماد وإصدار مسير الرواتب الرسمي للموظفين`, module: 'payroll' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل مسير رواتب جديد بنجاح في النظام.`, module: 'payroll' }]);
         } else {
           await fetchData();
         }
@@ -179,7 +179,7 @@ export default function Payroll() {
       
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
-        action: `🚨 حذف خطير: قام [${currentActor}] بإلغاء وحذف مسير رواتب من النظام`, 
+        action: `تم حذف سجل مسير الرواتب نهائياً بواسطة المستخدم المخول.`, 
         module: 'payroll' 
       }]);
 

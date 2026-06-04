@@ -55,12 +55,13 @@ export default function SecurityAudit() {
   };
 
   const moduleNames = {
-    sales: 'المبيعات 📑',
-    inventory: 'المستودع 📦',
-    hr: 'الموارد البشرية 👤',
-    payroll: 'الرواتب 💵',
-    finance: 'المالية 🎫',
-    assets: 'الأصول 🏢'
+    sales: 'فاتورة مبيعات',
+    inventory: 'المخزون',
+    hr: 'الموارد البشرية',
+    payroll: 'مسير الرواتب',
+    finance: 'حركة مالية',
+    assets: 'الأصول الثابتة',
+    purchase: 'فاتورة مشتريات'
   };
 
   // Client-side filtering
@@ -177,16 +178,16 @@ export default function SecurityAudit() {
               const userNameStr = log.user_name || 'Admin';
               const lowerUser = userNameStr.toLowerCase();
               
-              let cleanRole = 'موظف نظام 👤';
+              let cleanRole = 'موظف نظام';
               if (lowerUser.includes('admin') || lowerUser.includes('superadmin') || lowerUser.includes('mohammadnaseraldeen26@gmail.com')) {
-                cleanRole = 'مدير النظام 👑';
+                cleanRole = 'مدير النظام';
               } else if (lowerUser.includes('accountant') || lowerUser.includes('acc@')) {
-                cleanRole = 'المحاسب 💼';
+                cleanRole = 'المحاسب';
               } else if (userNameStr.includes('@')) {
                 const parts = userNameStr.split('@')[0];
-                cleanRole = parts.charAt(0).toUpperCase() + parts.slice(1) + ' 👤';
+                cleanRole = parts.charAt(0).toUpperCase() + parts.slice(1);
               } else if (userNameStr !== 'مستعمل النظام') {
-                cleanRole = `${userNameStr} 👤`;
+                cleanRole = userNameStr;
               }
               
               const displayAction = log.action ? log.action.replace(userNameStr, cleanRole) : '';

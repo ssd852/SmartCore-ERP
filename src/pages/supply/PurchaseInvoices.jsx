@@ -86,7 +86,8 @@ function PurchaseInvoiceForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function PurchaseInvoices() {
-  const { printDocument } = useApp();
+  const { printDocument, authUser, userRole } = useApp();
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'مستعمل النظام';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -129,6 +130,13 @@ export default function PurchaseInvoices() {
         const { error } = await supabase.from('purchases').update(form).eq('invoice_id', row.invoice_id);
         if (error) throw error;
         setData(p => p.map(r => r.invoice_id === row.invoice_id ? { ...r, ...form } : r));
+        
+        await supabase.from('activity_logs').insert([{ 
+          user_name: currentActor, 
+          action: `تم تعديل بيانات فاتورة التوريد والمشتريات رقم #${row.invoice_id} في النظام.`, 
+          module: 'purchase' 
+        }]);
+
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();
@@ -153,6 +161,12 @@ export default function PurchaseInvoices() {
             type: 'purchase',
             is_read: false
           }]);
+
+          await supabase.from('activity_logs').insert([{ 
+            user_name: currentActor, 
+            action: `تم تسجيل فاتورة توريد ومشتريات جديدة رقم #${insertedRecord.invoice_id || insertedRecord.id || 'تلقائي'} بنجاح في النظام.`, 
+            module: 'purchase' 
+          }]);
         } else {
           await fetchData();
         }
@@ -173,6 +187,13 @@ export default function PurchaseInvoices() {
       const { error } = await supabase.from('purchases').delete().eq('invoice_id', row.invoice_id);
       if (error) throw error;
       setData(p => p.filter(r => r.invoice_id !== row.invoice_id));
+      
+      await supabase.from('activity_logs').insert([{ 
+        user_name: currentActor, 
+        action: `تم حذف سجل فاتورة المشتريات رقم #${row.invoice_id || 'تلقائي'} نهائياً بواسطة المستخدم المخول.`, 
+        module: 'purchase' 
+      }]);
+
       addToast(t('delete') + ' ✓', 'warning');
     } catch (err) {
       console.error('Delete Purchase Error:', err);

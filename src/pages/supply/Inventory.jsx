@@ -231,7 +231,7 @@ export default function Inventory() {
         
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
-          action: `قام بتعديل بيانات الصنف المخزني: (${form.item_name || row.item_name || 'تلقائي'})`, 
+          action: `تم تعديل بيانات الصنف المخزني (${form.item_name || row.item_name || 'تلقائي'}) في النظام.`, 
           module: 'inventory' 
         }]);
 
@@ -250,7 +250,7 @@ export default function Inventory() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بإضافة صنف جديد إلى المستودع باسم: ${insertedRecord.item_name || 'تلقائي'}`, module: 'inventory' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل الصنف المخزني (${insertedRecord.item_name || 'تلقائي'}) بنجاح في النظام.`, module: 'inventory' }]);
         } else {
           await fetchData();
         }
@@ -348,7 +348,7 @@ export default function Inventory() {
                  setData(p => p.filter(r => r.item_id !== row.item_id));
                  await supabase.from('activity_logs').insert([{
                    user_name: currentActor,
-                   action: `⚠️ تلاعب مخزون: قام [${currentActor}] بحذف الصنف (${row.item_name || 'بدون اسم'}) وإزالته من الجرد`,
+                   action: `تم حذف سجل الصنف المخزني (${row.item_name || 'بدون اسم'}) نهائياً بواسطة المستخدم المخول.`,
                    module: 'inventory'
                  }]);
               }}

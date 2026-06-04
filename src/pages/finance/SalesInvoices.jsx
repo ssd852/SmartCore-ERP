@@ -131,7 +131,7 @@ export default function SalesInvoices() {
         
         await supabase.from('activity_logs').insert([{
           user_name: currentActor,
-          action: `قام بتعديل بيانات فاتورة المبيعات رقم #${row.invoice_id}`,
+          action: `تم تعديل بيانات فاتورة مبيعات رقم #${row.invoice_id} في النظام.`,
           module: 'sales'
         }]);
         
@@ -159,7 +159,7 @@ export default function SalesInvoices() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بإنشاء فاتورة مبيعات جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بقيمة ${insertedInvoice.amount}`, module: 'sales' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل فاتورة مبيعات جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بنجاح في النظام.`, module: 'sales' }]);
         } else {
           await fetchData();
         }
@@ -184,7 +184,7 @@ export default function SalesInvoices() {
       
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
-        action: `🚨 حذف خطير: قام [${currentActor}] بحذف فاتورة مبيعات رقم #${row.invoice_id || 'تلقائي'} نهائياً من النظام`, 
+        action: `تم حذف سجل فاتورة مبيعات رقم #${row.invoice_id || 'تلقائي'} نهائياً بواسطة المستخدم المخول.`, 
         module: 'sales' 
       }]);
 

@@ -300,7 +300,7 @@ export default function Employees() {
         
         await supabase.from('activity_logs').insert([{
           user_name: currentActor,
-          action: `قام بتعديل بيانات/رقم الموظف: (${form.name || row.name || 'تلقائي'})`,
+          action: `تم تعديل بيانات الموظف (${form.name || row.name || 'تلقائي'}) في النظام.`,
           module: 'hr'
         }]);
         
@@ -326,7 +326,7 @@ export default function Employees() {
              is_read: false
            }]);
 
-           await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بتسجيل موظف جديد في النظام باسم: ${newEmp.name || 'تلقائي'}`, module: 'hr' }]);
+           await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل الموظف (${newEmp.name || 'تلقائي'}) بنجاح في النظام.`, module: 'hr' }]);
         }
         else {
            await fetchData();
@@ -436,7 +436,7 @@ export default function Employees() {
       
       await supabase.from('activity_logs').insert([{
         user_name: currentActor,
-        action: `🚨 شؤون موظفين: قام [${currentActor}] بحذف ملف الموظف (${row.name || 'مجهول'}) نهائياً من السجلات`,
+        action: `تم حذف سجل الموظف (${row.name || 'مجهول'}) نهائياً بواسطة المستخدم المخول.`,
         module: 'hr'
       }]);
 

@@ -97,7 +97,7 @@ export default function FixedAssets() {
         
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
-          action: `قام بتعديل بيانات الأصل الثابت: (${form.asset_name || row.asset_name})`, 
+          action: `تم تعديل بيانات الأصل الثابت (${form.asset_name || row.asset_name}) في النظام.`, 
           module: 'assets' 
         }]);
 
@@ -116,7 +116,7 @@ export default function FixedAssets() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بقيد أصل ثابت جديد تابع للمؤسسة بنجاح`, module: 'assets' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل أصل ثابت جديد بنجاح في النظام.`, module: 'assets' }]);
         } else {
           await fetchData();
         }
@@ -140,7 +140,7 @@ export default function FixedAssets() {
       
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
-        action: `🚨 حذف خطير: قام [${currentActor}] بحذف الأصل الثابت (${row.asset_name || 'بدون اسم'}) نهائياً من سجل الأصول`, 
+        action: `تم حذف سجل الأصل الثابت نهائياً بواسطة المستخدم المخول.`, 
         module: 'assets' 
       }]);
 

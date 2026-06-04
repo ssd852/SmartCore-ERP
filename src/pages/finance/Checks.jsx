@@ -108,7 +108,7 @@ export default function Checks() {
         
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
-          action: `قام بتعديل بيانات شيك مالي رقم #${row.check_number || row.check_id}`, 
+          action: `تم تعديل بيانات الشيك المالي رقم #${row.check_number || row.check_id} في النظام.`, 
           module: 'finance' 
         }]);
 
@@ -127,7 +127,7 @@ export default function Checks() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بتقييد وإصدار شيك مالي جديد برقم: #${insertedRecord.check_number || 'تلقائي'}`, module: 'finance' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل شيك مالي جديد رقم #${insertedRecord.check_number || 'تلقائي'} بنجاح في النظام.`, module: 'finance' }]);
         } else {
           await fetchData();
         }
@@ -151,7 +151,7 @@ export default function Checks() {
       
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
-        action: `🚨 حذف خطير: قام [${currentActor}] بإلغاء وحذف الشيك رقم #${row.check_number || row.check_id || 'تلقائي'} من النظام`, 
+        action: `تم حذف سجل الشيك المالي رقم #${row.check_number || row.check_id || 'تلقائي'} نهائياً بواسطة المستخدم المخول.`, 
         module: 'finance' 
       }]);
 
