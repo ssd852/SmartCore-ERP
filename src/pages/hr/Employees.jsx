@@ -311,6 +311,8 @@ export default function Employees() {
              type: 'hr',
              is_read: false
            }]);
+
+           await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بتسجيل موظف جديد في النظام باسم: ${newEmp.name || 'تلقائي'}`, module: 'hr' }]);
         }
         else {
            await fetchData();

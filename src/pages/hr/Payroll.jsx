@@ -146,6 +146,8 @@ export default function Payroll() {
             type: 'payroll',
             is_read: false
           }]);
+
+          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام باعتماد وإصدار مسير الرواتب الرسمي للموظفين`, module: 'payroll' }]);
         } else {
           await fetchData();
         }

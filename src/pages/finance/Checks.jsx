@@ -118,6 +118,8 @@ export default function Checks() {
             type: 'finance',
             is_read: false
           }]);
+
+          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بتقييد وإصدار شيك مالي جديد برقم: #${insertedRecord.check_number || 'تلقائي'}`, module: 'finance' }]);
         } else {
           await fetchData();
         }

@@ -241,6 +241,8 @@ export default function Inventory() {
             type: 'stock',
             is_read: false
           }]);
+
+          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بإضافة صنف جديد إلى المستودع باسم: ${insertedRecord.item_name || 'تلقائي'}`, module: 'inventory' }]);
         } else {
           await fetchData();
         }

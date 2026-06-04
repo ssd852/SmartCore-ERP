@@ -144,6 +144,8 @@ export default function SalesInvoices() {
             type: 'invoice',
             is_read: false
           }]);
+
+          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بإنشاء فاتورة مبيعات جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بقيمة ${insertedInvoice.amount}`, module: 'sales' }]);
         } else {
           await fetchData();
         }

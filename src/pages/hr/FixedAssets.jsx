@@ -107,6 +107,8 @@ export default function FixedAssets() {
             type: 'assets',
             is_read: false
           }]);
+
+          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بقيد أصل ثابت جديد تابع للمؤسسة بنجاح`, module: 'assets' }]);
         } else {
           await fetchData();
         }
