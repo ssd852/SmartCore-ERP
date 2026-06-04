@@ -127,6 +127,19 @@ export default function SalesInvoices() {
         const { error } = await supabase.from('sales').update(form).eq('invoice_id', row.invoice_id);
         if (error) throw error;
         setData(p => p.map(r => r.invoice_id === row.invoice_id ? { ...r, ...form } : r));
+        
+        await supabase.from('activity_logs').insert([{
+          user_name: 'Admin',
+          action: `قام بتعديل بيانات فاتورة المبيعات رقم #${row.invoice_id}`,
+          module: 'sales'
+        }]);
+        
+        await supabase.from('notifications').insert([{
+          title: `تم تعديل فاتورة مبيعات رقم #${row.invoice_id} 📑`,
+          type: 'invoice',
+          is_read: false
+        }]);
+
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();

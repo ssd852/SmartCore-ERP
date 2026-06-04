@@ -296,6 +296,19 @@ export default function Employees() {
         const { error } = await supabase.from('employees').update(form).eq('emp_id', row.emp_id).eq('tenant_id', tenantId);
         if (error) throw error;
         setEmployees(p => p.map(r => r.emp_id === row.emp_id ? { ...r, ...form } : r));
+        
+        await supabase.from('activity_logs').insert([{
+          user_name: 'Admin',
+          action: `قام بتعديل بيانات/رقم الموظف: (${form.name || row.name || 'تلقائي'})`,
+          module: 'hr'
+        }]);
+        
+        await supabase.from('notifications').insert([{
+          title: `👤 الموارد البشرية: تم تعديل بيانات الموظف (${form.name || row.name || 'تلقائي'})`,
+          type: 'hr',
+          is_read: false
+        }]);
+
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const currentTenant = await getAuthUserId();
