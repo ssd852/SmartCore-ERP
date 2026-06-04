@@ -51,7 +51,8 @@ function FixedAssetForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function FixedAssets() {
-  const { printDocument } = useApp();
+  const { printDocument, authUser, userRole } = useApp();
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -108,7 +109,7 @@ export default function FixedAssets() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بقيد أصل ثابت جديد تابع للمؤسسة بنجاح`, module: 'assets' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بقيد أصل ثابت جديد تابع للمؤسسة بنجاح`, module: 'assets' }]);
         } else {
           await fetchData();
         }
@@ -129,6 +130,13 @@ export default function FixedAssets() {
       const { error } = await supabase.from('assets').delete().eq('asset_id', row.asset_id);
       if (error) throw error;
       setData(p => p.filter(r => r.asset_id !== row.asset_id));
+      
+      await supabase.from('activity_logs').insert([{ 
+        user_name: currentActor, 
+        action: `🚨 حذف خطير: قام [${currentActor}] بحذف الأصل الثابت (${row.asset_name || 'بدون اسم'}) نهائياً من سجل الأصول`, 
+        module: 'assets' 
+      }]);
+
       addToast(t('delete') + ' ✓', 'warning');
     } catch (err) {
       console.error('Delete Asset Error:', err);

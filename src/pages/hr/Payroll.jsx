@@ -89,7 +89,8 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function Payroll() {
-  const { printDocument } = useApp();
+  const { printDocument, authUser, userRole } = useApp();
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -147,7 +148,7 @@ export default function Payroll() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام باعتماد وإصدار مسير الرواتب الرسمي للموظفين`, module: 'payroll' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام باعتماد وإصدار مسير الرواتب الرسمي للموظفين`, module: 'payroll' }]);
         } else {
           await fetchData();
         }
@@ -168,6 +169,13 @@ export default function Payroll() {
       const { error } = await supabase.from('payroll').delete().eq('payroll_id', row.payroll_id);
       if (error) throw error;
       setData(p => p.filter(r => r.payroll_id !== row.payroll_id));
+      
+      await supabase.from('activity_logs').insert([{ 
+        user_name: currentActor, 
+        action: `🚨 حذف خطير: قام [${currentActor}] بإلغاء وحذف مسير رواتب من النظام`, 
+        module: 'payroll' 
+      }]);
+
       addToast(t('delete') + ' ✓', 'warning');
     } catch (err) {
       console.error('Delete Payroll Error:', err);

@@ -90,7 +90,8 @@ function InventoryForm({ row, prefilledBarcode, onClose, onSave, isSaving }) {
 
 // --- Main Module ---
 export default function Inventory() {
-  const { setSidebarCollapsed, lang, printDocument } = useApp();
+  const { setSidebarCollapsed, lang, printDocument, authUser, userRole } = useApp();
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -242,7 +243,7 @@ export default function Inventory() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بإضافة صنف جديد إلى المستودع باسم: ${insertedRecord.item_name || 'تلقائي'}`, module: 'inventory' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بإضافة صنف جديد إلى المستودع باسم: ${insertedRecord.item_name || 'تلقائي'}`, module: 'inventory' }]);
         } else {
           await fetchData();
         }
@@ -338,6 +339,11 @@ export default function Inventory() {
               onDelete={async (row) => {
                  await supabase.from('inventory').delete().eq('item_id', row.item_id);
                  setData(p => p.filter(r => r.item_id !== row.item_id));
+                 await supabase.from('activity_logs').insert([{
+                   user_name: currentActor,
+                   action: `⚠️ تلاعب مخزون: قام [${currentActor}] بحذف الصنف (${row.item_name || 'بدون اسم'}) وإزالته من الجرد`,
+                   module: 'inventory'
+                 }]);
               }}
               addForm={({ row, onClose }) => <InventoryForm row={row} onClose={onClose} isSaving={isSaving} onSave={(f) => handleSaveItem(f, row, onClose)} />} 
               addTitle="إضافة بضاعة جديدة"

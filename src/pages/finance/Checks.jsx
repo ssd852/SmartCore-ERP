@@ -61,7 +61,8 @@ function CheckForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function Checks() {
-  const { printDocument } = useApp();
+  const { printDocument, authUser, userRole } = useApp();
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -119,7 +120,7 @@ export default function Checks() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بتقييد وإصدار شيك مالي جديد برقم: #${insertedRecord.check_number || 'تلقائي'}`, module: 'finance' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بتقييد وإصدار شيك مالي جديد برقم: #${insertedRecord.check_number || 'تلقائي'}`, module: 'finance' }]);
         } else {
           await fetchData();
         }
@@ -140,6 +141,13 @@ export default function Checks() {
       const { error } = await supabase.from('checks').delete().eq('check_id', row.check_id);
       if (error) throw error;
       setData(p => p.filter(r => r.check_id !== row.check_id));
+      
+      await supabase.from('activity_logs').insert([{ 
+        user_name: currentActor, 
+        action: `🚨 حذف خطير: قام [${currentActor}] بإلغاء وحذف الشيك رقم #${row.check_number || row.check_id || 'تلقائي'} من النظام`, 
+        module: 'finance' 
+      }]);
+
       addToast(t('delete') + ' ✓', 'warning');
     } catch (err) {
       console.error('Delete Check Error:', err);

@@ -67,7 +67,8 @@ function EmployeeForm({ row, onClose, onSave, isSaving }) {
 
 // --- Main Module ---
 export default function Employees() {
-  const { setSidebarCollapsed, lang, printDocument } = useApp();
+  const { setSidebarCollapsed, lang, printDocument, authUser, userRole } = useApp();
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -298,7 +299,7 @@ export default function Employees() {
         setEmployees(p => p.map(r => r.emp_id === row.emp_id ? { ...r, ...form } : r));
         
         await supabase.from('activity_logs').insert([{
-          user_name: 'Admin',
+          user_name: currentActor,
           action: `قام بتعديل بيانات/رقم الموظف: (${form.name || row.name || 'تلقائي'})`,
           module: 'hr'
         }]);
@@ -325,7 +326,7 @@ export default function Employees() {
              is_read: false
            }]);
 
-           await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بتسجيل موظف جديد في النظام باسم: ${newEmp.name || 'تلقائي'}`, module: 'hr' }]);
+           await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بتسجيل موظف جديد في النظام باسم: ${newEmp.name || 'تلقائي'}`, module: 'hr' }]);
         }
         else {
            await fetchData();
@@ -432,6 +433,13 @@ export default function Employees() {
       const { error } = await supabase.from('employees').delete().eq('emp_id', row.emp_id).eq('tenant_id', tenantId);
       if (error) throw error;
       setEmployees(p => p.filter(r => r.emp_id !== row.emp_id));
+      
+      await supabase.from('activity_logs').insert([{
+        user_name: currentActor,
+        action: `🚨 شؤون موظفين: قام [${currentActor}] بحذف ملف الموظف (${row.name || 'مجهول'}) نهائياً من السجلات`,
+        module: 'hr'
+      }]);
+
       addToast(t('delete') + ' ✓', 'warning');
     } catch (err) {
       addToast(err.message || 'Failed to delete data', 'error');

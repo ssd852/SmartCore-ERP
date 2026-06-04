@@ -85,7 +85,8 @@ function SalesInvoiceForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function SalesInvoices() {
-  const { printDocument } = useApp();
+  const { printDocument, authUser, userRole } = useApp();
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -129,7 +130,7 @@ export default function SalesInvoices() {
         setData(p => p.map(r => r.invoice_id === row.invoice_id ? { ...r, ...form } : r));
         
         await supabase.from('activity_logs').insert([{
-          user_name: 'Admin',
+          user_name: currentActor,
           action: `قام بتعديل بيانات فاتورة المبيعات رقم #${row.invoice_id}`,
           module: 'sales'
         }]);
@@ -158,7 +159,7 @@ export default function SalesInvoices() {
             is_read: false
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: 'Admin', action: `قام بإنشاء فاتورة مبيعات جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بقيمة ${insertedInvoice.amount}`, module: 'sales' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `قام بإنشاء فاتورة مبيعات جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بقيمة ${insertedInvoice.amount}`, module: 'sales' }]);
         } else {
           await fetchData();
         }
@@ -180,6 +181,13 @@ export default function SalesInvoices() {
       const { error } = await supabase.from('sales').delete().eq('invoice_id', row.invoice_id);
       if (error) throw error;
       setData(p => p.filter(r => r.invoice_id !== row.invoice_id));
+      
+      await supabase.from('activity_logs').insert([{ 
+        user_name: currentActor, 
+        action: `🚨 حذف خطير: قام [${currentActor}] بحذف فاتورة مبيعات رقم #${row.invoice_id || 'تلقائي'} نهائياً من النظام`, 
+        module: 'sales' 
+      }]);
+
       addToast(t('delete') + ' ✓', 'warning');
     } catch (err) {
       console.error('Delete Sales Error:', err);
