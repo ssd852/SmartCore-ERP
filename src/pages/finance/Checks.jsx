@@ -62,7 +62,7 @@ function CheckForm({ row, onClose, onSave, isSaving }) {
 
 export default function Checks() {
   const { printDocument, authUser, userRole } = useApp();
-  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'مستعمل النظام';
+  const currentActor = userRole === 'Admin' || userRole === 'Superadmin' ? 'مدير النظام' : userRole === 'Accountant' ? 'المحاسب' : (authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'مستعمل النظام');
   const { t } = useTranslation();
   const addToast = useToast();
   

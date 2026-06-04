@@ -39,9 +39,19 @@ const NOTIFICATION_TYPE_MAP = {
 
 export default function Topbar({ onMenuClick }) {
   const { t } = useTranslation();
-  const { lang, setLang, viewMode, setViewMode, theme, toggleTheme, sidebarCollapsed, setSidebarCollapsed } = useApp();
+  const { lang, setLang, viewMode, setViewMode, theme, toggleTheme, sidebarCollapsed, setSidebarCollapsed, authUser, userRole } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const getGreeting = () => {
+    if (userRole === 'Admin' || userRole === 'Superadmin') return { title: 'مدير النظام', subtext: 'إدارة النظام' };
+    if (userRole === 'Accountant') return { title: 'المحاسب المالي', subtext: 'القسم المالي' };
+    const name = authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'مستخدم';
+    return { title: name, subtext: 'مستخدم' };
+  };
+  const { title: userTitle, subtext: userSubtext } = getGreeting();
+  const userInitials = userTitle.charAt(0).toUpperCase() || 'U';
+  const displayEmail = authUser?.email || 'user@company.com';
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -276,11 +286,11 @@ export default function Topbar({ onMenuClick }) {
               className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-black shrink-0"
               style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)' }}
             >
-              A
+              {userInitials}
             </div>
             <div className="hidden sm:block text-start">
-              <div className="text-xs font-bold text-slate-300 leading-tight">Admin</div>
-              <div className="text-[10px] text-slate-600 leading-tight">ERP Manager</div>
+              <div className="text-xs font-bold text-slate-300 leading-tight">{userTitle}</div>
+              <div className="text-[10px] text-slate-600 leading-tight">{userSubtext}</div>
             </div>
             <ChevronDown size={12} className={`text-slate-600 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
           </button>
@@ -296,8 +306,8 @@ export default function Topbar({ onMenuClick }) {
               }}
             >
               <div className="px-4 py-3 border-b border-white/6">
-                <p className="text-xs font-bold text-slate-200">Admin</p>
-                <p className="text-[11px] text-slate-500">admin@company.com</p>
+                <p className="text-xs font-bold text-slate-200">{userTitle}</p>
+                <p className="text-[11px] text-slate-500 truncate block max-w-full" title={displayEmail}>{displayEmail}</p>
               </div>
               <div className="py-1">
                 {[
