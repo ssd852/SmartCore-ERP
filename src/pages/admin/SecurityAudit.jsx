@@ -175,8 +175,22 @@ export default function SecurityAudit() {
           ) : (
             filteredLogs.map((log) => {
               const userNameStr = log.user_name || 'Admin';
-              const cleanUser = userNameStr.includes('@') ? userNameStr.split('@')[0] : userNameStr;
-              const displayAction = log.action ? log.action.replace(userNameStr, cleanUser) : '';
+              const lowerUser = userNameStr.toLowerCase();
+              
+              let cleanRole = 'موظف نظام 👤';
+              if (lowerUser.includes('admin') || lowerUser.includes('superadmin') || lowerUser.includes('mohammadnaseraldeen26@gmail.com')) {
+                cleanRole = 'مدير النظام 👑';
+              } else if (lowerUser.includes('accountant') || lowerUser.includes('acc@')) {
+                cleanRole = 'المحاسب 💼';
+              } else if (userNameStr.includes('@')) {
+                const parts = userNameStr.split('@')[0];
+                cleanRole = parts.charAt(0).toUpperCase() + parts.slice(1) + ' 👤';
+              } else if (userNameStr !== 'مستعمل النظام') {
+                cleanRole = `${userNameStr} 👤`;
+              }
+              
+              const displayAction = log.action ? log.action.replace(userNameStr, cleanRole) : '';
+              const initial = cleanRole.replace(/[^a-zA-Zأ-ي]/g, '').charAt(0) || 'U';
 
               return (
                 <div 
@@ -190,10 +204,10 @@ export default function SecurityAudit() {
                   </div>
                   <div className="col-span-1 md:col-span-3 text-right flex items-center gap-2 overflow-hidden">
                     <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                      <span className="text-[10px] text-white font-bold">{cleanUser.charAt(0).toUpperCase()}</span>
+                      <span className="text-[10px] text-white font-bold">{initial}</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-200 truncate block max-w-full" title={cleanUser}>
-                      {cleanUser}
+                    <span className="text-sm font-bold text-slate-200 truncate block max-w-full" title={cleanRole}>
+                      {cleanRole}
                     </span>
                   </div>
                   <div className="col-span-1 md:col-span-2 flex justify-center text-center">
