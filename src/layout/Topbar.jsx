@@ -325,12 +325,12 @@ export default function Topbar({ onMenuClick }) {
         {selectedNotification && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+            className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4"
             dir={lang === 'ar' ? 'rtl' : 'ltr'}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 rounded-3xl p-8 pt-10 max-w-md w-full shadow-[0_0_40px_rgba(79,70,229,0.15)] relative overflow-hidden"
+              className="bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 rounded-3xl p-8 pt-10 max-w-md w-full shadow-[0_0_40px_rgba(79,70,229,0.15)] relative max-h-[85vh] overflow-y-auto overflow-x-hidden"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] pointer-events-none" />
               
