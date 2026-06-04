@@ -124,8 +124,9 @@ export default function Topbar({ onMenuClick }) {
   const unreadCount = notifications.filter(n => n.unread).length;
 
   return (
-    <header
-      className="flex items-center justify-between h-14 md:h-16 px-3 md:px-5"
+    <>
+      <header
+        className="flex items-center justify-between h-14 md:h-16 px-3 md:px-5"
       style={{
         background: 'rgba(11,17,32,0.85)',
         backdropFilter: 'blur(20px)',
@@ -319,6 +320,7 @@ export default function Topbar({ onMenuClick }) {
           )}
         </div>
       </div>
+      </header>
 
       {/* Notification Details Modal */}
       <AnimatePresence>
@@ -398,6 +400,6 @@ export default function Topbar({ onMenuClick }) {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }
