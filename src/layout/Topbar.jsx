@@ -56,12 +56,56 @@ export default function Topbar({ onMenuClick }) {
   const cycleLang = () => setLang(lang === 'ar' ? 'en' : 'ar');
   const cycleView = () => setViewMode(viewMode === 'desktop' ? 'mobile' : 'desktop');
 
-  // Mock notifications
-  const notifications = [
-    { id: 1, text: lang === 'ar' ? 'فاتورة جديدة #1042 بانتظار الموافقة' : 'New invoice #1042 awaiting approval', time: '2m', unread: true },
-    { id: 2, text: lang === 'ar' ? 'رصيد المخزون منخفض: صنف #205' : 'Low stock alert: Item #205', time: '18m', unread: true },
-    { id: 3, text: lang === 'ar' ? 'تم إتمام مسير رواتب مايو' : 'May payroll processing complete', time: '1h', unread: false },
-  ];
+  const [notifications, setNotifications] = useState([]);
+
+  // Fetch existing notifications and subscribe to real-time inserts
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (!error && data) {
+        // Map database fields to UI state (assuming 'message' or 'text', and 'is_read')
+        setNotifications(data.map(n => ({
+          id: n.id,
+          text: n.message || n.text || n.title, // Fallback fields for flexibility
+          time: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          unread: !n.is_read
+        })));
+      }
+    };
+
+    fetchNotifications();
+
+    // Subscribe to new notifications using Supabase Realtime
+    const channel = supabase
+      .channel('schema-db-changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        const newNotif = {
+          id: payload.new.id,
+          text: payload.new.message || payload.new.text || payload.new.title,
+          time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          unread: !payload.new.is_read
+        };
+        // Append new notification to the top
+        setNotifications(prev => [newNotif, ...prev]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleMarkAsRead = async (id) => {
+    // Optimistic UI update
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n));
+    // Update DB
+    await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+  };
+
   const unreadCount = notifications.filter(n => n.unread).length;
 
   return (
@@ -177,6 +221,7 @@ export default function Topbar({ onMenuClick }) {
                 {notifications.map(n => (
                   <div
                     key={n.id}
+                    onClick={() => n.unread && handleMarkAsRead(n.id)}
                     className={`px-4 py-3 flex items-start gap-3 hover:bg-white/4 transition-colors cursor-pointer border-b border-white/4 last:border-0 ${n.unread ? 'bg-indigo-500/4' : ''}`}
                   >
                     <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-indigo-400' : 'bg-slate-700'}`} />
