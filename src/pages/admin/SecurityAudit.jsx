@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../context/AppContext';
 import { supabase, supabaseReady } from '../../config/supabaseClient';
-import { ShieldAlert, Shield, Loader2, Filter } from 'lucide-react';
+import { ShieldAlert, Shield, Loader2, Filter, Search, Activity, DollarSign, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 
@@ -11,6 +11,7 @@ export default function SecurityAudit() {
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterModule, setFilterModule] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Strict Client-side Auth
   if (userRole !== 'Admin' && userRole !== 'Superadmin') {
@@ -29,11 +30,7 @@ export default function SecurityAudit() {
     setIsLoading(true);
     try {
       if (!supabaseReady) return;
-      let query = supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(50);
-      if (filterModule !== 'all') {
-        query = query.eq('module', filterModule);
-      }
-      const { data, error } = await query;
+      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(100);
       if (error) throw error;
       setLogs(data || []);
     } catch (err) {
@@ -45,7 +42,7 @@ export default function SecurityAudit() {
 
   useEffect(() => {
     fetchLogs();
-  }, [filterModule]);
+  }, []);
 
   const moduleColors = {
     sales: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]',
@@ -66,8 +63,24 @@ export default function SecurityAudit() {
     assets: 'الأصول 🏢'
   };
 
+  // Client-side filtering
+  const filteredLogs = useMemo(() => {
+    return logs.filter(log => {
+      const matchModule = filterModule === 'all' || log.module === filterModule;
+      const matchSearch = log.action.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (log.user_name && log.user_name.toLowerCase().includes(searchQuery.toLowerCase()));
+      return matchModule && matchSearch;
+    });
+  }, [logs, filterModule, searchQuery]);
+
+  // Dynamic Statistics
+  const totalLogsCount = logs.length;
+  const salesLogsCount = logs.filter(l => l.module === 'sales').length;
+  const hrLogsCount = logs.filter(l => l.module === 'hr' || l.module === 'payroll').length;
+
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(79,70,229,0.2)]">
@@ -78,8 +91,36 @@ export default function SecurityAudit() {
             <p className="text-sm font-bold text-slate-400 mt-1">سجل النظام الأمني (Activity Logs)</p>
           </div>
         </div>
+      </div>
 
-        <div className="flex items-center gap-3 bg-slate-900/60 p-1.5 rounded-xl border border-white/5">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-slate-900/60 backdrop-blur-md border border-blue-500/30 rounded-2xl p-5 flex flex-col gap-2 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400 text-sm font-bold">إجمالي العمليات الأمنيّة</span>
+            <Activity className="text-blue-400" size={20} />
+          </div>
+          <span className="text-3xl font-black text-white">{totalLogsCount}</span>
+        </div>
+        <div className="bg-slate-900/60 backdrop-blur-md border border-emerald-500/30 rounded-2xl p-5 flex flex-col gap-2 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400 text-sm font-bold">حركات المبيعات المالية</span>
+            <DollarSign className="text-emerald-400" size={20} />
+          </div>
+          <span className="text-3xl font-black text-white">{salesLogsCount}</span>
+        </div>
+        <div className="bg-slate-900/60 backdrop-blur-md border border-violet-500/30 rounded-2xl p-5 flex flex-col gap-2 shadow-[0_0_20px_rgba(139,92,246,0.1)]">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-400 text-sm font-bold">تحديثات الكادر البشري</span>
+            <Users className="text-violet-400" size={20} />
+          </div>
+          <span className="text-3xl font-black text-white">{hrLogsCount}</span>
+        </div>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <div className="flex items-center gap-3 bg-slate-900/60 p-1.5 rounded-xl border border-white/5 w-full md:w-auto shrink-0">
           <Filter size={18} className="text-slate-500 ms-2" />
           <select 
             value={filterModule}
@@ -95,61 +136,72 @@ export default function SecurityAudit() {
             <option value="assets" className="bg-slate-900">الأصول الثابتة</option>
           </select>
         </div>
+        
+        <div className="relative flex-1 md:max-w-md">
+          <div className="absolute inset-y-0 start-0 flex items-center ps-4 pointer-events-none">
+            <Search size={16} className="text-slate-500" />
+          </div>
+          <input 
+            type="text" 
+            placeholder="بحث سريع في نص الإجراء المستهدف..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full bg-slate-900/60 border border-slate-800 text-white focus:border-violet-500 focus:ring-1 focus:ring-violet-500 rounded-xl ps-10 pe-4 py-2.5 text-sm backdrop-blur-md outline-none transition-all"
+          />
+        </div>
       </div>
 
-      <div className="bg-slate-900/40 backdrop-blur-md rounded-3xl border border-indigo-500/20 overflow-hidden shadow-[0_0_30px_rgba(79,70,229,0.05)]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-            <thead>
-              <tr className="bg-white/5 border-b border-white/10">
-                <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">التوقيت</th>
-                <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">المستخدم</th>
-                <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider">القسم</th>
-                <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-wider w-1/2">الإجراء المتخذ</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {isLoading ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto" />
-                  </td>
-                </tr>
-              ) : logs.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-slate-500 font-bold">
-                    لا يوجد سجلات حالياً لهذا القسم.
-                  </td>
-                </tr>
-              ) : (
-                logs.map((log) => (
-                  <tr key={log.id || Math.random()} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-[11px] font-bold text-slate-300" dir="ltr">
-                        {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center">
-                          <span className="text-[10px] text-white font-bold">{log.user_name?.charAt(0) || 'A'}</span>
-                        </div>
-                        <span className="text-sm font-bold text-slate-200">{log.user_name || 'Admin'}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black border ${moduleColors[log.module] || moduleColors.default}`}>
-                        {moduleNames[log.module] || log.module}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm font-bold text-slate-300">{log.action}</span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Grid Table */}
+      <div className="bg-slate-950/20 border border-indigo-500/10 rounded-3xl p-4 md:p-6 overflow-hidden">
+        
+        {/* Header */}
+        <div className="hidden md:grid grid-cols-12 gap-4 items-center mb-4 px-4">
+          <div className="col-span-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">التوقيت</div>
+          <div className="col-span-2 text-right text-xs font-black text-slate-500 uppercase tracking-wider">المستخدم</div>
+          <div className="col-span-2 text-center text-xs font-black text-slate-500 uppercase tracking-wider">القسم</div>
+          <div className="col-span-5 text-right text-xs font-black text-slate-500 uppercase tracking-wider">الإجراء المتخذ</div>
+        </div>
+
+        {/* Body */}
+        <div className="space-y-2">
+          {isLoading ? (
+            <div className="py-12 flex justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+            </div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="py-12 text-center text-slate-500 font-bold">
+              لا يوجد سجلات متطابقة.
+            </div>
+          ) : (
+            filteredLogs.map((log) => (
+              <div 
+                key={log.id || Math.random()} 
+                className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-slate-900/30 backdrop-blur-md border border-slate-800/50 hover:bg-slate-800/40 hover:border-violet-500/40 hover:shadow-[0_0_15px_rgba(139,92,246,0.08)] transition-all duration-300 rounded-xl p-4 cursor-pointer"
+              >
+                <div className="col-span-1 md:col-span-3 text-right">
+                  <span className="text-[11px] font-bold text-slate-400" dir="ltr">
+                    {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </span>
+                </div>
+                <div className="col-span-1 md:col-span-2 text-right">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                      <span className="text-[10px] text-white font-bold">{log.user_name?.charAt(0) || 'A'}</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-200">{log.user_name || 'Admin'}</span>
+                  </div>
+                </div>
+                <div className="col-span-1 md:col-span-2 text-center">
+                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black border ${moduleColors[log.module] || moduleColors.default}`}>
+                    {moduleNames[log.module] || log.module}
+                  </span>
+                </div>
+                <div className="col-span-1 md:col-span-5 text-right font-medium">
+                  <span className="text-sm text-slate-300 leading-relaxed">{log.action}</span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
