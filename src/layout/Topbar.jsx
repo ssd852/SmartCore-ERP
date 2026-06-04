@@ -330,18 +330,18 @@ export default function Topbar({ onMenuClick }) {
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 rounded-3xl p-8 max-w-md w-full shadow-[0_0_40px_rgba(79,70,229,0.15)] relative overflow-hidden"
+              className="bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 rounded-3xl p-8 pt-10 max-w-md w-full shadow-[0_0_40px_rgba(79,70,229,0.15)] relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] pointer-events-none" />
               
               <button 
                 onClick={() => setSelectedNotification(null)} 
-                className="absolute top-6 left-6 text-slate-500 hover:text-white transition-colors z-10"
+                className="absolute top-6 left-6 text-slate-500 hover:text-white transition-colors z-20"
               >
                 <X size={24} />
               </button>
               
-              <div className="flex items-center gap-4 mb-6 relative z-10">
+              <div className="flex items-center gap-4 mb-8 mt-2 relative z-10">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
                   {selectedNotification.type === 'invoice' ? <FileText className="text-indigo-400" size={28} /> : 
                    selectedNotification.type === 'alert' ? <AlertTriangle className="text-amber-400" size={28} /> : 
