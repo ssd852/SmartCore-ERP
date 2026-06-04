@@ -233,8 +233,17 @@ export default function Inventory() {
         const payload = { ...form, user_id };
         const { data: newRecords, error } = await supabase.from('inventory').insert([payload]).select();
         if (error) throw error;
-        if (newRecords && newRecords.length > 0) setData(p => [newRecords[0], ...p]);
-        else await fetchData();
+        if (newRecords && newRecords.length > 0) {
+          const insertedRecord = newRecords[0];
+          setData(p => [insertedRecord, ...p]);
+          await supabase.from('notifications').insert([{
+            title: `📦 تنبيه مخزون: تم إضافة صنف جديد (${insertedRecord.item_name || 'تلقائي'}) للمستودع`,
+            type: 'stock',
+            is_read: false
+          }]);
+        } else {
+          await fetchData();
+        }
         addToast('تمت الإضافة ✓', 'success');
       }
       onClose();

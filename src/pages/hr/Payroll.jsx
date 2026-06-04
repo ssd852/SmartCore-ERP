@@ -138,8 +138,17 @@ export default function Payroll() {
         const payload = { ...form, user_id };
         const { data: newRecords, error } = await supabase.from('payroll').insert([payload]).select();
         if (error) throw error;
-        if (newRecords && newRecords.length > 0) setData(p => [newRecords[0], ...p]);
-        else await fetchData();
+        if (newRecords && newRecords.length > 0) {
+          const insertedRecord = newRecords[0];
+          setData(p => [insertedRecord, ...p]);
+          await supabase.from('notifications').insert([{
+            title: `💵 الرواتب: تم إتمام واعتماد مسير رواتب جديد في النظام`,
+            type: 'payroll',
+            is_read: false
+          }]);
+        } else {
+          await fetchData();
+        }
         addToast(t('save') + ' ✓', 'success');
       }
       onClose();

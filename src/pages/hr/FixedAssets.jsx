@@ -99,8 +99,17 @@ export default function FixedAssets() {
         const payload = { ...form, user_id };
         const { data: newRecords, error } = await supabase.from('assets').insert([payload]).select();
         if (error) throw error;
-        if (newRecords && newRecords.length > 0) setData(p => [newRecords[0], ...p]);
-        else await fetchData();
+        if (newRecords && newRecords.length > 0) {
+          const insertedRecord = newRecords[0];
+          setData(p => [insertedRecord, ...p]);
+          await supabase.from('notifications').insert([{
+            title: `🏢 الأصول الثابتة: تم قيد أصل مالي جديد بنجاح`,
+            type: 'assets',
+            is_read: false
+          }]);
+        } else {
+          await fetchData();
+        }
         addToast(t('save') + ' ✓', 'success');
       }
       onClose();

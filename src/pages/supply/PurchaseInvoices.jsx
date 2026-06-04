@@ -145,8 +145,17 @@ export default function PurchaseInvoices() {
            if (ledgerError) console.error("Ledger sync error:", ledgerError);
         }
 
-        if (newRecords && newRecords.length > 0) setData(p => [newRecords[0], ...p]);
-        else await fetchData();
+        if (newRecords && newRecords.length > 0) {
+          const insertedRecord = newRecords[0];
+          setData(p => [insertedRecord, ...p]);
+          await supabase.from('notifications').insert([{
+            title: `📥 المشتريات: تم تسجيل فاتورة توريد جديدة رقم #${insertedRecord.invoice_id || insertedRecord.id || 'تلقائي'} بانتظار الجرد`,
+            type: 'purchase',
+            is_read: false
+          }]);
+        } else {
+          await fetchData();
+        }
         addToast(t('save') + ' ✓', 'success');
       }
       onClose();

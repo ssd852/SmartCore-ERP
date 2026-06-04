@@ -110,8 +110,17 @@ export default function Checks() {
         const payload = { ...form, user_id };
         const { data: newRecords, error } = await supabase.from('checks').insert([payload]).select();
         if (error) throw error;
-        if (newRecords && newRecords.length > 0) setData(p => [newRecords[0], ...p]);
-        else await fetchData();
+        if (newRecords && newRecords.length > 0) {
+          const insertedRecord = newRecords[0];
+          setData(p => [insertedRecord, ...p]);
+          await supabase.from('notifications').insert([{
+            title: `🎫 حركة مالية: تم إصدار/تسجيل شيك مالي جديد رقم #${insertedRecord.check_number || 'تلقائي'}`,
+            type: 'finance',
+            is_read: false
+          }]);
+        } else {
+          await fetchData();
+        }
         addToast(t('save') + ' ✓', 'success');
       }
       onClose();

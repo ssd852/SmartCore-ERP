@@ -306,8 +306,15 @@ export default function Employees() {
         if (newRecords && newRecords.length > 0) {
            const newEmp = { ...newRecords[0], display_id: newRecords[0].emp_id };
            setEmployees(p => [newEmp, ...p]);
+           await supabase.from('notifications').insert([{
+             title: `👤 الموارد البشرية: تم تسجيل الموظف الجديد (${newEmp.name || 'تلقائي'}) في النظام`,
+             type: 'hr',
+             is_read: false
+           }]);
         }
-        else await fetchData();
+        else {
+           await fetchData();
+        }
         addToast(t('success_saved'), 'success');
       }
       if (onClose) onClose();
