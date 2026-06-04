@@ -133,8 +133,23 @@ export default function SalesInvoices() {
         const payload = { ...form, user_id };
         const { data: newRecords, error } = await supabase.from('sales').insert([payload]).select();
         if (error) throw error;
-        if (newRecords && newRecords.length > 0) setData(p => [newRecords[0], ...p]);
-        else await fetchData();
+
+        if (newRecords && newRecords.length > 0) {
+          const insertedInvoice = newRecords[0];
+          setData(p => [insertedInvoice, ...p]);
+
+          // Trigger real-time notification
+          await supabase.from('notifications').insert([{
+            tenant_id: user_id,
+            title: `تم إضافة فاتورة جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بانتظار المراجعة 📑`,
+            message: `فاتورة مبيعات جديدة بقيمة ${insertedInvoice.amount} لتاريخ ${insertedInvoice.invoice_date}`,
+            type: 'invoice',
+            is_read: false
+          }]);
+        } else {
+          await fetchData();
+        }
+        
         addToast(t('save') + ' ✓', 'success');
       }
       onClose();
