@@ -140,9 +140,7 @@ export default function SalesInvoices() {
 
           // Trigger real-time notification
           await supabase.from('notifications').insert([{
-            tenant_id: user_id,
-            title: `تم إضافة فاتورة جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بانتظار المراجعة 📑`,
-            message: `فاتورة مبيعات جديدة بقيمة ${insertedInvoice.amount} لتاريخ ${insertedInvoice.invoice_date}`,
+            title: `تم إضافة فاتورة جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بقيمة ${insertedInvoice.amount} 📑`,
             type: 'invoice',
             is_read: false
           }]);
