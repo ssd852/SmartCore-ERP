@@ -52,7 +52,7 @@ function FixedAssetForm({ row, onClose, onSave, isSaving }) {
 
 export default function FixedAssets() {
   const { printDocument, authUser, userRole } = useApp();
-  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'مستعمل النظام';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -94,6 +94,13 @@ export default function FixedAssets() {
         const { error } = await supabase.from('assets').update(form).eq('asset_id', row.asset_id);
         if (error) throw error;
         setData(p => p.map(r => r.asset_id === row.asset_id ? { ...r, ...form } : r));
+        
+        await supabase.from('activity_logs').insert([{ 
+          user_name: currentActor, 
+          action: `قام بتعديل بيانات الأصل الثابت: (${form.asset_name || row.asset_name})`, 
+          module: 'assets' 
+        }]);
+
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();

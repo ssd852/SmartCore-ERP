@@ -62,7 +62,7 @@ function CheckForm({ row, onClose, onSave, isSaving }) {
 
 export default function Checks() {
   const { printDocument, authUser, userRole } = useApp();
-  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'مستعمل النظام';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -105,6 +105,13 @@ export default function Checks() {
         const { error } = await supabase.from('checks').update(form).eq('check_id', row.check_id);
         if (error) throw error;
         setData(p => p.map(r => r.check_id === row.check_id ? { ...r, ...form } : r));
+        
+        await supabase.from('activity_logs').insert([{ 
+          user_name: currentActor, 
+          action: `قام بتعديل بيانات شيك مالي رقم #${row.check_number || row.check_id}`, 
+          module: 'finance' 
+        }]);
+
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();

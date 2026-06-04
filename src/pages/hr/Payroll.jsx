@@ -90,7 +90,7 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
 
 export default function Payroll() {
   const { printDocument, authUser, userRole } = useApp();
-  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'مستعمل النظام';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -133,6 +133,13 @@ export default function Payroll() {
         const { error } = await supabase.from('payroll').update(form).eq('payroll_id', row.payroll_id);
         if (error) throw error;
         setData(p => p.map(r => r.payroll_id === row.payroll_id ? { ...r, ...form } : r));
+        
+        await supabase.from('activity_logs').insert([{ 
+          user_name: currentActor, 
+          action: `قام بتعديل بيانات مسير الرواتب (معرف: ${row.payroll_id})`, 
+          module: 'payroll' 
+        }]);
+
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();

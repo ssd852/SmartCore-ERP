@@ -91,7 +91,7 @@ function InventoryForm({ row, prefilledBarcode, onClose, onSave, isSaving }) {
 // --- Main Module ---
 export default function Inventory() {
   const { setSidebarCollapsed, lang, printDocument, authUser, userRole } = useApp();
-  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'مستعمل النظام';
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -228,6 +228,13 @@ export default function Inventory() {
         const { error } = await supabase.from('inventory').update(form).eq('item_id', row.item_id);
         if (error) throw error;
         setData(p => p.map(r => r.item_id === row.item_id ? { ...r, ...form } : r));
+        
+        await supabase.from('activity_logs').insert([{ 
+          user_name: currentActor, 
+          action: `قام بتعديل بيانات الصنف المخزني: (${form.item_name || row.item_name || 'تلقائي'})`, 
+          module: 'inventory' 
+        }]);
+
         addToast('تم التحديث ✓', 'info');
       } else {
         const user_id = await getAuthUserId();

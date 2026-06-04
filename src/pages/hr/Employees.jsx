@@ -68,7 +68,7 @@ function EmployeeForm({ row, onClose, onSave, isSaving }) {
 // --- Main Module ---
 export default function Employees() {
   const { setSidebarCollapsed, lang, printDocument, authUser, userRole } = useApp();
-  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'مستعمل النظام';
   const { t } = useTranslation();
   const addToast = useToast();
   

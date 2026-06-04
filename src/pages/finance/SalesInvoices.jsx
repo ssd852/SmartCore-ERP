@@ -86,7 +86,7 @@ function SalesInvoiceForm({ row, onClose, onSave, isSaving }) {
 
 export default function SalesInvoices() {
   const { printDocument, authUser, userRole } = useApp();
-  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'محاسب';
+  const currentActor = authUser?.user_metadata?.name || authUser?.email || userRole || 'مستعمل النظام';
   const { t } = useTranslation();
   const addToast = useToast();
   
