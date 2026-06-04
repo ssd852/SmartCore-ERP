@@ -27,6 +27,16 @@ const BREADCRUMBS = {
   '/reports':    ['reports'],
 };
 
+const NOTIFICATION_TYPE_MAP = {
+  hr: 'الموارد البشرية 👤',
+  invoice: 'فاتورة مبيعات 📑',
+  purchase: 'فاتورة مشتريات 📥',
+  stock: 'إدارة المخازن 📦',
+  payroll: 'مسير الرواتب 💵',
+  finance: 'حركة شيكات / مالية 🎫',
+  assets: 'الأصول الثابتة 🏢'
+};
+
 export default function Topbar({ onMenuClick }) {
   const { t } = useTranslation();
   const { lang, setLang, viewMode, setViewMode, theme, toggleTheme, sidebarCollapsed, setSidebarCollapsed } = useApp();
@@ -371,7 +381,7 @@ export default function Topbar({ onMenuClick }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800">
                     <p className="text-xs text-slate-500 mb-1.5 font-bold">النوع</p>
-                    <p className="text-sm text-slate-200 font-bold">{selectedNotification.type === 'invoice' ? 'فاتورة' : 'تنبيه مخزون / نظام'}</p>
+                    <p className="text-sm text-slate-200 font-bold">{NOTIFICATION_TYPE_MAP[selectedNotification.type] || 'تنبيه النظام ⚙️'}</p>
                   </div>
                   <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800">
                     <p className="text-xs text-slate-500 mb-1.5 font-bold">التوقيت</p>
