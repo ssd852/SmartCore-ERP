@@ -123,5 +123,7 @@
   "outgoing": "صادر",
   "system_tools": "أدوات النظام",
   "sql_engine": "محرك SQL",
-  "data_management": "إدارة البيانات"
+  "data_management": "إدارة البيانات",
+  "admin_security": "الرقابة الأمنية",
+  "security_audit": "سجل الرقابة الأمني"
 }

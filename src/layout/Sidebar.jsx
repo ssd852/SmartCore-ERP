@@ -6,7 +6,7 @@ import { useApp } from '../context/AppContext';
 import {
   LayoutDashboard, Package, ShoppingCart, Truck, FileText,
   Users, BookOpen, Building, UserCheck,
-  DollarSign, BarChart3, ChevronDown, ChevronUp, Landmark, CreditCard, Terminal, HardDrive, Cpu
+  DollarSign, BarChart3, ChevronDown, ChevronUp, Landmark, CreditCard, Terminal, HardDrive, Cpu, Shield, ShieldAlert
 } from 'lucide-react';
 
 const menuGroups = [
@@ -53,6 +53,13 @@ const menuGroups = [
     ],
   },
   {
+    key: 'admin_security',
+    icon: Shield,
+    items: [
+      { key: 'security_audit', icon: ShieldAlert, path: '/audit' },
+    ],
+  },
+  {
     key: 'system_tools',
     icon: Terminal,
     items: [
@@ -69,6 +76,7 @@ const groupColors = {
   finance_sales:    'text-amber-400',
   hr_assets:        'text-sky-400',
   reports:          'text-purple-400',
+  admin_security:   'text-rose-400',
   system_tools:     'text-cyan-400',
 };
 
@@ -78,6 +86,7 @@ const groupBg = {
   finance_sales:    'rgba(245,158,11,0.1)',
   hr_assets:        'rgba(14,165,233,0.1)',
   reports:          'rgba(168,85,247,0.1)',
+  admin_security:   'rgba(244,63,94,0.1)',
   system_tools:     'rgba(34,211,238,0.1)',
 };
 

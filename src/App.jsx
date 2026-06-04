@@ -17,6 +17,7 @@ import Dashboard        from './pages/Dashboard';
 import Reports          from './pages/Reports';
 import DataManagement   from './pages/DataManagement';
 import UltraSqlTerminal from './pages/UltraSqlTerminal';
+import SecurityAudit    from './pages/admin/SecurityAudit';
 
 // Supply
 import Suppliers        from './pages/supply/Suppliers';
@@ -97,6 +98,9 @@ export default function App() {
                   <Route path="/reports"    element={<SubscriptionGuard><Reports /></SubscriptionGuard>} />
                   <Route path="/sql"        element={<SuperAdminGuard><SubscriptionGuard><UltraSqlTerminal /></SubscriptionGuard></SuperAdminGuard>} />
                   <Route path="/data-mgmt"  element={<SuperAdminGuard><SubscriptionGuard><DataManagement /></SubscriptionGuard></SuperAdminGuard>} />
+                  
+                  {/* Admin & Security */}
+                  <Route path="/audit"      element={<RoleGuard allowedRoles={['Superadmin', 'Admin']}><SubscriptionGuard><SecurityAudit /></SubscriptionGuard></RoleGuard>} />
                 </Route>
 
                 {/* Catch-all */}
