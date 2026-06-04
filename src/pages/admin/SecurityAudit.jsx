@@ -155,11 +155,11 @@ export default function SecurityAudit() {
       <div className="bg-slate-950/20 border border-indigo-500/10 rounded-3xl p-4 md:p-6 overflow-hidden">
         
         {/* Header */}
-        <div className="hidden md:grid grid-cols-12 gap-4 items-center mb-4 px-4">
-          <div className="col-span-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">التوقيت</div>
-          <div className="col-span-2 text-right text-xs font-black text-slate-500 uppercase tracking-wider">المستخدم</div>
-          <div className="col-span-2 text-center text-xs font-black text-slate-500 uppercase tracking-wider">القسم</div>
-          <div className="col-span-5 text-right text-xs font-black text-slate-500 uppercase tracking-wider">الإجراء المتخذ</div>
+        <div className="hidden md:grid grid-cols-12 gap-4 items-center mb-4 px-4 w-full">
+          <div className="col-span-2 text-right text-xs font-black text-slate-500 uppercase tracking-wider">التوقيت</div>
+          <div className="col-span-3 text-right text-xs font-black text-slate-500 uppercase tracking-wider">المستخدم</div>
+          <div className="col-span-2 flex justify-center text-center text-xs font-black text-slate-500 uppercase tracking-wider">القسم</div>
+          <div className="col-span-5 text-right text-xs font-black text-slate-500 uppercase tracking-wider pr-2">الإجراء المتخذ</div>
         </div>
 
         {/* Body */}
@@ -173,34 +173,42 @@ export default function SecurityAudit() {
               لا يوجد سجلات متطابقة.
             </div>
           ) : (
-            filteredLogs.map((log) => (
-              <div 
-                key={log.id || Math.random()} 
-                className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-slate-900/30 backdrop-blur-md border border-slate-800/50 hover:bg-slate-800/40 hover:border-violet-500/40 hover:shadow-[0_0_15px_rgba(139,92,246,0.08)] transition-all duration-300 rounded-xl p-4 cursor-pointer"
-              >
-                <div className="col-span-1 md:col-span-3 text-right">
-                  <span className="text-[11px] font-bold text-slate-400" dir="ltr">
-                    {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                  </span>
-                </div>
-                <div className="col-span-1 md:col-span-2 text-right">
-                  <div className="flex items-center gap-2">
+            filteredLogs.map((log) => {
+              const userNameStr = log.user_name || 'Admin';
+              const cleanUser = userNameStr.includes('@') ? userNameStr.split('@')[0] : userNameStr;
+              const displayAction = log.action ? log.action.replace(userNameStr, cleanUser) : '';
+
+              return (
+                <div 
+                  key={log.id || Math.random()} 
+                  className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-slate-900/30 backdrop-blur-md border border-slate-800/50 hover:bg-slate-800/40 hover:border-violet-500/40 hover:shadow-[0_0_15px_rgba(139,92,246,0.08)] transition-all duration-300 rounded-xl p-4 cursor-pointer overflow-hidden w-full"
+                >
+                  <div className="col-span-1 md:col-span-2 text-right">
+                    <span className="text-[11px] font-bold text-slate-400" dir="ltr">
+                      {new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    </span>
+                  </div>
+                  <div className="col-span-1 md:col-span-3 text-right flex items-center gap-2 overflow-hidden">
                     <div className="w-7 h-7 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
-                      <span className="text-[10px] text-white font-bold">{log.user_name?.charAt(0) || 'A'}</span>
+                      <span className="text-[10px] text-white font-bold">{cleanUser.charAt(0).toUpperCase()}</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-200">{log.user_name || 'Admin'}</span>
+                    <span className="text-sm font-bold text-slate-200 truncate block max-w-full" title={cleanUser}>
+                      {cleanUser}
+                    </span>
+                  </div>
+                  <div className="col-span-1 md:col-span-2 flex justify-center text-center">
+                    <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black border whitespace-nowrap ${moduleColors[log.module] || moduleColors.default}`}>
+                      {moduleNames[log.module] || log.module}
+                    </span>
+                  </div>
+                  <div className="col-span-1 md:col-span-5 text-right font-medium pr-2 overflow-hidden">
+                    <span className="text-sm text-slate-300 leading-relaxed truncate block max-w-full" title={displayAction}>
+                      {displayAction}
+                    </span>
                   </div>
                 </div>
-                <div className="col-span-1 md:col-span-2 text-center">
-                  <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-black border ${moduleColors[log.module] || moduleColors.default}`}>
-                    {moduleNames[log.module] || log.module}
-                  </span>
-                </div>
-                <div className="col-span-1 md:col-span-5 text-right font-medium">
-                  <span className="text-sm text-slate-300 leading-relaxed">{log.action}</span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
