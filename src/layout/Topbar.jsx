@@ -67,10 +67,11 @@ export default function Topbar({ onMenuClick }) {
         .order('created_at', { ascending: false })
         .limit(20);
       if (!error && data) {
-        // Map database fields to UI state (assuming 'message' or 'text', and 'is_read')
+        // Map database fields to UI state strictly
         setNotifications(data.map(n => ({
           id: n.id,
-          text: n.message || n.text || n.title, // Fallback fields for flexibility
+          title: n.title,
+          message: n.message,
           time: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           unread: !n.is_read
         })));
@@ -85,7 +86,8 @@ export default function Topbar({ onMenuClick }) {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
         const newNotif = {
           id: payload.new.id,
-          text: payload.new.message || payload.new.text || payload.new.title,
+          title: payload.new.title,
+          message: payload.new.message,
           time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           unread: !payload.new.is_read
         };
@@ -226,8 +228,9 @@ export default function Topbar({ onMenuClick }) {
                   >
                     <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-indigo-400' : 'bg-slate-700'}`} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-slate-300 leading-relaxed">{n.text}</p>
-                      <p className="text-[10px] text-slate-600 mt-0.5 font-medium">{n.time} {lang === 'ar' ? 'منذ' : 'ago'}</p>
+                      {n.title && <p className="text-xs font-bold text-slate-200 mb-0.5">{n.title}</p>}
+                      <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-2">{n.message}</p>
+                      <p className="text-[10px] text-slate-600 mt-1 font-medium">{n.time} {lang === 'ar' ? 'منذ' : 'ago'}</p>
                     </div>
                   </div>
                 ))}
