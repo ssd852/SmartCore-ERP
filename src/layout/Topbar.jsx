@@ -43,14 +43,25 @@ export default function Topbar({ onMenuClick }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const getGreeting = () => {
-    if (userRole === 'Admin' || userRole === 'Superadmin') return { title: 'مدير النظام', subtext: 'إدارة النظام' };
-    if (userRole === 'Accountant') return { title: 'المحاسب المالي', subtext: 'القسم المالي' };
-    const name = authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || 'مستخدم';
-    return { title: name, subtext: 'مستخدم' };
+  const getDynamicRole = () => {
+    const activeUserEmail = authUser?.email || '';
+    const activeUserRole = authUser?.user_metadata?.role || userRole || '';
+    
+    if (activeUserEmail.toLowerCase().includes('accountant') || activeUserRole.toLowerCase().includes('accountant')) {
+      return "المحاسب";
+    }
+    if (activeUserEmail.toLowerCase().includes('admin') || activeUserRole.toLowerCase().includes('admin')) {
+      return "مدير النظام";
+    }
+    if (activeUserEmail === 'mohammadnaseraldeen26@gmail.com') {
+      return activeUserRole.toLowerCase().includes('accountant') ? "المحاسب" : "مدير النظام";
+    }
+    return "مدير النظام";
   };
-  const { title: userTitle, subtext: userSubtext } = getGreeting();
-  const userInitials = userTitle.charAt(0).toUpperCase() || 'U';
+  const currentRoleAr = getDynamicRole();
+  const userTitle = currentRoleAr === 'المحاسب' ? 'المحاسب المالي' : 'مدير النظام';
+  const userSubtext = currentRoleAr === 'المحاسب' ? 'القسم المالي' : 'إدارة النظام';
+  const userInitials = userTitle.charAt(0);
   const displayEmail = authUser?.email || 'user@company.com';
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);

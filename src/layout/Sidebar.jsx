@@ -92,12 +92,21 @@ const groupBg = {
 
 export default function Sidebar() {
   const { t } = useTranslation();
-  const { lang, sidebarCollapsed, isDevMode, setIsDevMode, userRole } = useApp();
+  const { lang, sidebarCollapsed, isDevMode, setIsDevMode, authUser, userRole } = useApp();
   const location = useLocation();
   
-  const isSuperAdmin = userRole === 'Superadmin';
-  const isAdmin = userRole === 'Admin';
-  const isAccountant = userRole === 'Accountant';
+  const getDynamicRole = () => {
+    const activeUserEmail = authUser?.email || '';
+    const activeUserRole = authUser?.user_metadata?.role || userRole || '';
+    if (activeUserEmail.toLowerCase().includes('accountant') || activeUserRole.toLowerCase().includes('accountant')) return "المحاسب";
+    if (activeUserEmail.toLowerCase().includes('admin') || activeUserRole.toLowerCase().includes('admin')) return "مدير النظام";
+    if (activeUserEmail === 'mohammadnaseraldeen26@gmail.com') return activeUserRole.toLowerCase().includes('accountant') ? "المحاسب" : "مدير النظام";
+    return "مدير النظام";
+  };
+  const dynamicRoleAr = getDynamicRole();
+  const isSuperAdmin = dynamicRoleAr === 'مدير النظام' && userRole === 'Superadmin';
+  const isAdmin = dynamicRoleAr === 'مدير النظام';
+  const isAccountant = dynamicRoleAr === 'المحاسب';
 
   const visibleGroups = menuGroups.filter(g => {
     if (isSuperAdmin) return true;
