@@ -5,8 +5,10 @@ import { useApp } from '../context/AppContext';
 import { supabase } from '../config/supabaseClient';
 import {
   Sun, Moon, Globe, PanelLeftClose, PanelLeftOpen, Bell, Menu,
-  ChevronDown, LogOut, User, Settings, Monitor, Smartphone
+  ChevronDown, LogOut, User, Settings, Monitor, Smartphone,
+  X, FileText, AlertTriangle, CheckCircle, Info, ArrowUpRight
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /* ── Route → breadcrumb label map ── */
 const BREADCRUMBS = {
@@ -33,6 +35,7 @@ export default function Topbar({ onMenuClick }) {
 
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const userMenuRef = useRef(null);
   const notifRef = useRef(null);
 
@@ -72,7 +75,9 @@ export default function Topbar({ onMenuClick }) {
           id: n.id,
           title: n.title,
           message: n.message,
+          type: n.type || 'system',
           time: new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          raw_date: n.created_at,
           unread: !n.is_read
         })));
       }
@@ -88,7 +93,9 @@ export default function Topbar({ onMenuClick }) {
           id: payload.new.id,
           title: payload.new.title,
           message: payload.new.message,
+          type: payload.new.type || 'system',
           time: new Date(payload.new.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          raw_date: payload.new.created_at,
           unread: !payload.new.is_read
         };
         // Append new notification to the top
@@ -106,6 +113,12 @@ export default function Topbar({ onMenuClick }) {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, unread: false } : n));
     // Update DB
     await supabase.from('notifications').update({ is_read: true }).eq('id', id);
+  };
+
+  const handleNotificationClick = (n) => {
+    if (n.unread) handleMarkAsRead(n.id);
+    setSelectedNotification(n);
+    setNotifOpen(false);
   };
 
   const unreadCount = notifications.filter(n => n.unread).length;
@@ -223,7 +236,7 @@ export default function Topbar({ onMenuClick }) {
                 {notifications.map(n => (
                   <div
                     key={n.id}
-                    onClick={() => n.unread && handleMarkAsRead(n.id)}
+                    onClick={() => handleNotificationClick(n)}
                     className={`px-4 py-3 flex items-start gap-3 hover:bg-white/4 transition-colors cursor-pointer border-b border-white/4 last:border-0 ${n.unread ? 'bg-indigo-500/4' : ''}`}
                   >
                     <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.unread ? 'bg-indigo-400' : 'bg-slate-700'}`} />
@@ -306,6 +319,85 @@ export default function Topbar({ onMenuClick }) {
           )}
         </div>
       </div>
+
+      {/* Notification Details Modal */}
+      <AnimatePresence>
+        {selectedNotification && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm"
+            dir={lang === 'ar' ? 'rtl' : 'ltr'}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-slate-900/90 backdrop-blur-md border border-indigo-500/30 rounded-3xl p-8 max-w-md w-full shadow-[0_0_40px_rgba(79,70,229,0.15)] relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 blur-[80px] pointer-events-none" />
+              
+              <button 
+                onClick={() => setSelectedNotification(null)} 
+                className="absolute top-6 left-6 text-slate-500 hover:text-white transition-colors z-10"
+              >
+                <X size={24} />
+              </button>
+              
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center shrink-0">
+                  {selectedNotification.type === 'invoice' ? <FileText className="text-indigo-400" size={28} /> : 
+                   selectedNotification.type === 'alert' ? <AlertTriangle className="text-amber-400" size={28} /> : 
+                   <Info className="text-indigo-400" size={28} />}
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white leading-tight">
+                    {selectedNotification.type === 'invoice' ? 'تفاصيل طلب الموافقة' : 'تفاصيل التنبيه'}
+                  </h2>
+                  <div className="inline-flex mt-1.5 items-center gap-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold">
+                    <CheckCircle size={10} /> بانتظار الإجراء
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 relative z-10">
+                <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800">
+                  <p className="text-xs text-slate-500 mb-1.5 font-bold">نص التنبيه</p>
+                  <p className="text-sm text-slate-200 leading-relaxed font-bold">{selectedNotification.title}</p>
+                  {selectedNotification.message && (
+                    <p className="text-xs text-slate-400 mt-2 leading-relaxed">{selectedNotification.message}</p>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800">
+                    <p className="text-xs text-slate-500 mb-1.5 font-bold">النوع</p>
+                    <p className="text-sm text-slate-200 font-bold">{selectedNotification.type === 'invoice' ? 'فاتورة' : 'تنبيه مخزون / نظام'}</p>
+                  </div>
+                  <div className="bg-slate-950/50 rounded-xl p-4 border border-slate-800">
+                    <p className="text-xs text-slate-500 mb-1.5 font-bold">التوقيت</p>
+                    <p className="text-[11px] text-slate-200 font-bold mt-1" dir="ltr">
+                      {selectedNotification.raw_date ? new Date(selectedNotification.raw_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : selectedNotification.time}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-8 relative z-10">
+                <button 
+                  onClick={() => setSelectedNotification(null)}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)] flex items-center justify-center gap-2 text-sm"
+                >
+                  معاينة المستند كامل <ArrowUpRight size={16} />
+                </button>
+                <button 
+                  onClick={() => setSelectedNotification(null)}
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-3.5 rounded-xl transition-all text-sm border border-slate-700"
+                >
+                  إغلاق
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
