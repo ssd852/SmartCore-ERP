@@ -17,8 +17,8 @@ const BACKUP_TABLES = [
   { key: 'customers',         label: 'العملاء' },
   { key: 'employees',         label: 'الموظفون' },
   { key: 'inventory',         label: 'المخزون' },
-  { key: 'sales_invoices',    label: 'فواتير المبيعات' },
-  { key: 'purchase_invoices', label: 'فواتير المشتريات' },
+  { key: 'sales',             label: 'فواتير المبيعات' },
+  { key: 'purchases',         label: 'فواتير المشتريات' },
   { key: 'payroll',           label: 'مسيرات الرواتب' },
   { key: 'fixed_assets',      label: 'الأصول الثابتة' },
   { key: 'checks',            label: 'الشيكات' },
@@ -284,20 +284,27 @@ function BackupSection() {
         const { key, label } = BACKUP_TABLES[i];
         setProgress({ current: i + 1, total: BACKUP_TABLES.length, label });
 
-        const { data: rows, error } = await supabase.from(key).select('*');
-        if (error) throw error;
-        const data = rows || [];
+        try {
+          const { data: rows, error } = await supabase.from(key).select('*');
+          if (error) {
+            console.error(`Error fetching table ${key}:`, error);
+            // We log but don't throw so the other tables can continue
+          }
+          const data = rows || [];
 
-        const htmlString = generateHTMLReport(label, key, data);
-        const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `نسخة_احتياطية_${key}_${new Date().toISOString().split('T')[0]}.html`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+          const htmlString = generateHTMLReport(label, key, data);
+          const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `نسخة_احتياطية_${key}_${new Date().toISOString().split('T')[0]}.html`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } catch (tableErr) {
+          console.error(`Failed to export ${key}:`, tableErr);
+        }
         
         await new Promise(r => setTimeout(r, 400)); // prevent browser lockup
       }
