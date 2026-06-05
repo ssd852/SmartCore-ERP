@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ShieldCheck, Download, Trash2, AlertTriangle, Loader2,
@@ -9,29 +9,21 @@ import { exportMultipleToCSV } from '../utils/exportToCSV';
 import { useToast } from '../context/ToastContext';
 import { useApp } from '../context/AppContext';
 
-/* ── Mock data fallback for tables not in Supabase ── */
-import {
-  MOCK_SUPPLIERS, MOCK_CUSTOMERS, MOCK_EMPLOYEES,
-  MOCK_INVENTORY, MOCK_SALES_INVOICES, MOCK_PURCHASE_INVOICES,
-  MOCK_PAYROLL, MOCK_FIXED_ASSETS, MOCK_CHECKS,
-  MOCK_CHART_OF_ACCOUNTS, MOCK_JOURNAL_ENTRIES
-} from '../data/mockData';
-
 const CONFIRM_PHRASE = 'تأكيد الحذف';
 const MASTER_CONFIRM_PHRASE = 'مسح شامل';
 
 const BACKUP_TABLES = [
-  { key: 'suppliers',         label: 'الموردون',         mock: MOCK_SUPPLIERS },
-  { key: 'customers',         label: 'العملاء',          mock: MOCK_CUSTOMERS },
-  { key: 'employees',         label: 'الموظفون',         mock: MOCK_EMPLOYEES },
-  { key: 'inventory',         label: 'المخزون',          mock: MOCK_INVENTORY },
-  { key: 'sales_invoices',    label: 'فواتير المبيعات',  mock: MOCK_SALES_INVOICES },
-  { key: 'purchase_invoices', label: 'فواتير المشتريات', mock: MOCK_PURCHASE_INVOICES },
-  { key: 'payroll',           label: 'مسيرات الرواتب',   mock: MOCK_PAYROLL },
-  { key: 'fixed_assets',      label: 'الأصول الثابتة',   mock: MOCK_FIXED_ASSETS },
-  { key: 'checks',            label: 'الشيكات',          mock: MOCK_CHECKS },
-  { key: 'chart_of_accounts', label: 'دليل الحسابات',    mock: MOCK_CHART_OF_ACCOUNTS },
-  { key: 'journal_entries',   label: 'القيود اليومية',   mock: MOCK_JOURNAL_ENTRIES },
+  { key: 'suppliers',         label: 'الموردون' },
+  { key: 'customers',         label: 'العملاء' },
+  { key: 'employees',         label: 'الموظفون' },
+  { key: 'inventory',         label: 'المخزون' },
+  { key: 'sales_invoices',    label: 'فواتير المبيعات' },
+  { key: 'purchase_invoices', label: 'فواتير المشتريات' },
+  { key: 'payroll',           label: 'مسيرات الرواتب' },
+  { key: 'fixed_assets',      label: 'الأصول الثابتة' },
+  { key: 'checks',            label: 'الشيكات' },
+  { key: 'chart_of_accounts', label: 'دليل الحسابات' },
+  { key: 'journal_entries',   label: 'القيود اليومية' },
 ];
 
 /* ── Animated status badge ── */
@@ -90,7 +82,7 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
     <tr>
       ${headers.map(h => `<td>${row[h] !== null && row[h] !== undefined ? String(row[h]).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</td>`).join('')}
     </tr>
-  `).join('') : '<tr><td colspan="100%" style="text-align: center; padding: 20px;">لا توجد بيانات متوفرة</td></tr>';
+  `).join('') : '<tr><td colspan="100%" style="text-align: center; padding: 20px; font-weight: bold; color: var(--secondary);">لا توجد سجلات مسجلة في هذا القسم حالياً.</td></tr>';
 
   const theadHtml = headers.length > 0 ? `
     <thead>
@@ -242,14 +234,31 @@ function BackupSection() {
   const addToast = useToast();
   const [backupState, setBackupState] = useState('idle');
   const [progress, setProgress] = useState({ current: 0, total: BACKUP_TABLES.length, label: '' });
+  const [tableCounts, setTableCounts] = useState({});
 
-  const downloadSingleTable = async (key, label, mock) => {
-    try {
-      let data = mock;
-      if (supabaseReady && supabase) {
-        const { data: rows, error } = await supabase.from(key).select('*');
-        if (!error && rows?.length > 0) data = rows;
+  useEffect(() => {
+    async function fetchCounts() {
+      if (!supabaseReady || !supabase) return;
+      const counts = {};
+      for (const t of BACKUP_TABLES) {
+        try {
+          const { count, error } = await supabase.from(t.key).select('*', { count: 'exact', head: true });
+          counts[t.key] = error ? '?' : count;
+        } catch (e) {
+          counts[t.key] = '?';
+        }
       }
+      setTableCounts(counts);
+    }
+    fetchCounts();
+  }, []);
+
+  const downloadSingleTable = async (key, label) => {
+    try {
+      if (!supabaseReady || !supabase) throw new Error("قاعدة البيانات غير متصلة");
+      const { data: rows, error } = await supabase.from(key).select('*');
+      if (error) throw error;
+      const data = rows || [];
       const htmlString = generateHTMLReport(label, key, data);
       const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -270,15 +279,14 @@ function BackupSection() {
     setBackupState('loading');
     setProgress({ current: 0, total: BACKUP_TABLES.length, label: 'جارٍ جلب البيانات...' });
     try {
+      if (!supabaseReady || !supabase) throw new Error("قاعدة البيانات غير متصلة");
       for (let i = 0; i < BACKUP_TABLES.length; i++) {
-        const { key, label, mock } = BACKUP_TABLES[i];
+        const { key, label } = BACKUP_TABLES[i];
         setProgress({ current: i + 1, total: BACKUP_TABLES.length, label });
 
-        let data = mock; // fallback
-        if (supabaseReady && supabase) {
-          const { data: rows, error } = await supabase.from(key).select('*');
-          if (!error && rows?.length > 0) data = rows;
-        }
+        const { data: rows, error } = await supabase.from(key).select('*');
+        if (error) throw error;
+        const data = rows || [];
 
         const htmlString = generateHTMLReport(label, key, data);
         const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
@@ -333,9 +341,9 @@ function BackupSection() {
       {/* Table list */}
       <div className="px-4 md:px-6 py-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
-          {BACKUP_TABLES.map(({ key, label, mock }) => (
+          {BACKUP_TABLES.map(({ key, label }) => (
             <button key={key}
-              onClick={() => downloadSingleTable(key, label, mock)}
+              onClick={() => downloadSingleTable(key, label)}
               title={`تنزيل تقرير ${label}`}
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs border border-white/5 hover:bg-white/10 transition-colors text-left"
               style={{ background: 'rgba(255,255,255,0.02)' }}
@@ -343,7 +351,7 @@ function BackupSection() {
               <Database size={11} className="text-emerald-500/70 shrink-0" />
               <span className="text-slate-400 truncate">{label}</span>
               <Download size={10} className="ms-auto text-emerald-400/50" />
-              <span className="text-slate-700 font-mono text-[10px] ms-1">{mock.length}</span>
+              <span className="text-slate-700 font-mono text-[10px] ms-1">{tableCounts[key] !== undefined ? tableCounts[key] : '...'}</span>
             </button>
           ))}
         </div>
