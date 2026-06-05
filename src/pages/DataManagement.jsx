@@ -73,50 +73,53 @@ function SectionCard({ children, glowColor = '#6366f1', danger = false }) {
    SECTION A — DATA BACKUP
 ═══════════════════════════════════════════ */
 
+const systemBlacklist = ['tenant_id', 'user_id', 'id_secure'];
+
 const columnTranslations = {
-  // Common Fields
-  id: "المعرف",
-  created_at: "تاريخ التسجيل",
-  status: "الحالة",
+  // Payroll & HR (Fixing image_7dc0bf.png)
+  payroll_id: "رقم قيد الراتب",
+  emp_id: "رقم الموظف الإداري",
+  employee_name: "اسم الموظف",
+  month_year: "الشهر / السنة",
+  basic_salary: "الراتب الأساسي",
+  allowances: "البدلات والمكافآت",
+  deductions: "الاستقطاعات والخصومات",
+  net_salary: "صافي الراتب",
+  salary: "الراتب الأساسي",
+  month: "الشهر",
+  
+  // System / Fallbacks
+  id: "الرقم المرجعي",
+  created_at: "تاريخ الإنشاء في النظام",
+  status: "حالة الاعتماد",
   type: "النوع",
-  user_id: "رقم المستخدم",
   created_by: "بواسطة",
   
-  // Checks Module (From image_7dcba1.png)
+  // Sales, Purchases & Inventory
+  invoice_number: "رقم الفاتورة",
+  customer_name: "اسم العميل",
+  supplier_name: "اسم المورد",
+  item_name: "اسم الصنف/المنتج",
+  quantity: "الكمية",
+  price: "سعر الوحدة",
+  total_amount: "إجمالي المبلغ الصافي",
+  tax: "الضريبة",
+  discount: "الخصم",
+  sku: "رمز المنتج",
+  category: "الفئة",
+  
+  // Checks Module
   check_id: "معرف الشيك",
   check_number: "رقم الشيك",
   bank_name: "اسم البنك",
   due_date: "تاريخ الاستحقاق",
   amount: "المبلغ",
-  
-  // Invoices (Sales & Purchases)
-  invoice_number: "رقم الفاتورة",
-  customer_name: "اسم العميل",
-  supplier_name: "اسم المورد",
-  total_amount: "إجمالي القيمة",
-  tax: "الضريبة",
-  discount: "الخصم",
-  
-  // Inventory & Items
-  item_name: "اسم الصنف",
-  sku: "رمز المنتج",
-  quantity: "الكمية المتوفرة",
-  price: "سعر الوحدة",
-  category: "الفئة",
-  
-  // HR & Payroll
-  employee_name: "اسم الموظف",
-  salary: "الراتب الأساسي",
-  net_salary: "صافي الراتب",
-  allowances: "البدلات",
-  deductions: "الاستقطاعات",
-  month: "الشهر"
 };
 const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
   const dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const rowCount = data ? data.length : 0;
   
-  const headers = rowCount > 0 ? Object.keys(data[0]) : [];
+  const headers = rowCount > 0 ? Object.keys(data[0]).filter(k => !systemBlacklist.includes(k)) : [];
 
   const rowsHtml = rowCount > 0 ? data.map(row => `
     <tr>
