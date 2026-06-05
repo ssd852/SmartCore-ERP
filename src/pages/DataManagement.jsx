@@ -73,48 +73,49 @@ function SectionCard({ children, glowColor = '#6366f1', danger = false }) {
    SECTION A — DATA BACKUP
 ═══════════════════════════════════════════ */
 
-const systemBlacklist = ['tenant_id', 'user_id', 'id_secure'];
+const systemBlacklist = ['tenant_id', 'tenant_emp_id', 'id_secure', 'created_at', 'updated_at', 'created_by', 'password', 'user_id'];
 
-const columnTranslations = {
-  // Payroll & HR (Fixing image_7dc0bf.png)
-  payroll_id: "رقم قيد الراتب",
-  emp_id: "رقم الموظف الإداري",
-  employee_name: "اسم الموظف",
-  month_year: "الشهر / السنة",
-  basic_salary: "الراتب الأساسي",
-  allowances: "البدلات والمكافآت",
-  deductions: "الاستقطاعات والخصومات",
-  net_salary: "صافي الراتب",
-  salary: "الراتب الأساسي",
-  month: "الشهر",
-  
-  // System / Fallbacks
-  id: "الرقم المرجعي",
-  created_at: "تاريخ الإنشاء في النظام",
-  status: "حالة الاعتماد",
-  type: "النوع",
-  created_by: "بواسطة",
-  
-  // Sales, Purchases & Inventory
-  invoice_number: "رقم الفاتورة",
+const globalTranslations = {
+  // Joined Relational Names (From Step 1)
   customer_name: "اسم العميل",
-  supplier_name: "اسم المورد",
-  item_name: "اسم الصنف/المنتج",
-  quantity: "الكمية",
-  price: "سعر الوحدة",
-  total_amount: "إجمالي المبلغ الصافي",
-  tax: "الضريبة",
-  discount: "الخصم",
-  sku: "رمز المنتج",
-  category: "الفئة",
+  supplier_name: "اسم المورد / الشركة",
+  employee_name: "اسم الموظف",
   
-  // Checks Module
-  check_id: "معرف الشيك",
-  check_number: "رقم الشيك",
-  bank_name: "اسم البنك",
-  due_date: "تاريخ الاستحقاق",
+  // Invoices
+  invoice_id: "رقم الفاتورة",
+  invoice_date: "تاريخ الفاتورة",
+  
+  // Employees & HR
+  name: "الاسم الرباعي",
+  position: "المسمى الوظيفي",
+  department: "القسم / الإدارة",
+  annual_leave_balance: "رصيد الإجازات السنوية",
+  sick_leave_balance: "رصيد الإجازات المرضية",
+  email: "البريد الإلكتروني",
+  
+  // Inventory
+  unit_price: "سعر الوحدة",
+  cost_price: "سعر التكلفة",
+  sale_price: "سعر البيع",
+  barcode: "الباركود",
+  min_stock_level: "الحد الأدنى للمخزون",
+  
+  // Customers & Suppliers
+  phone: "رقم الهاتف",
+  company: "الشركة / المؤسسة",
+  company_name: "اسم الشركة التجارية",
+  contact_person: "الشخص المسؤول",
+  tax_number: "الرقم الضريبي",
+  opening_balance: "الرصيد الافتتاحي",
+  current_balance: "الرصيد الحالي",
+  
+  // Common
+  status: "الحالة",
+  type: "النوع",
   amount: "المبلغ",
+  total_amount: "الإجمالي"
 };
+
 const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
   const dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const rowCount = data ? data.length : 0;
@@ -122,6 +123,7 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
   let headers = rowCount > 0 ? Object.keys(data[0]).filter(k => !systemBlacklist.includes(k)) : [];
   
   // Smart Data Resolution: Remove ID column if human-readable name column exists
+  // (We handle this mostly in fetchTableData now, but we keep this just in case)
   const relationalPairs = [
     { idKey: 'emp_id', nameKey: 'employee_name' },
     { idKey: 'customer_id', nameKey: 'customer_name' },
@@ -153,7 +155,7 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
     <thead>
       <tr>
         ${headers.map(h => {
-          const translatedHeader = columnTranslations[h] || h;
+          const translatedHeader = globalTranslations[h] || h;
           return `<th>${translatedHeader}</th>`;
         }).join('')}
       </tr>
@@ -300,6 +302,34 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
   `.trim();
 };
 
+const fetchTableData = async (tableName) => {
+  let query = '*';
+  if (tableName === 'sales') query = '*, customers(name)';
+  else if (tableName === 'purchases') query = '*, suppliers(company_name)';
+  else if (tableName === 'payroll') query = '*, employees(name)';
+
+  const { data: rows, error } = await supabase.from(tableName).select(query);
+  if (error) throw error;
+  
+  return (rows || []).map(row => {
+    const newRow = { ...row };
+    if (tableName === 'sales' && newRow.customers) {
+      newRow.customer_name = newRow.customers.name;
+      delete newRow.customer_id;
+      delete newRow.customers;
+    } else if (tableName === 'purchases' && newRow.suppliers) {
+      newRow.supplier_name = newRow.suppliers.company_name;
+      delete newRow.supplier_id;
+      delete newRow.suppliers;
+    } else if (tableName === 'payroll' && newRow.employees) {
+      newRow.employee_name = newRow.employees.name;
+      delete newRow.emp_id;
+      delete newRow.employees;
+    }
+    return newRow;
+  });
+};
+
 function BackupSection() {
   const addToast = useToast();
   const [backupState, setBackupState] = useState('idle');
@@ -326,9 +356,7 @@ function BackupSection() {
   const downloadSingleTable = async (key, label) => {
     try {
       if (!supabaseReady || !supabase) throw new Error("قاعدة البيانات غير متصلة");
-      const { data: rows, error } = await supabase.from(key).select('*');
-      if (error) throw error;
-      const data = rows || [];
+      const data = await fetchTableData(key);
       const htmlString = generateHTMLReport(label, key, data);
       const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -355,12 +383,7 @@ function BackupSection() {
         setProgress({ current: i + 1, total: BACKUP_TABLES.length, label });
 
         try {
-          const { data: rows, error } = await supabase.from(key).select('*');
-          if (error) {
-            console.error(`Error fetching table ${key}:`, error);
-            // We log but don't throw so the other tables can continue
-          }
-          const data = rows || [];
+          const data = await fetchTableData(key);
 
           const htmlString = generateHTMLReport(label, key, data);
           const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
