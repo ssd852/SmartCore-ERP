@@ -80,16 +80,196 @@ function SectionCard({ children, glowColor = '#6366f1', danger = false }) {
 /* ═══════════════════════════════════════════
    SECTION A — DATA BACKUP
 ═══════════════════════════════════════════ */
+const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
+  const dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const rowCount = data ? data.length : 0;
+  
+  const headers = rowCount > 0 ? Object.keys(data[0]) : [];
+
+  const rowsHtml = rowCount > 0 ? data.map(row => `
+    <tr>
+      ${headers.map(h => `<td>${row[h] !== null && row[h] !== undefined ? String(row[h]).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</td>`).join('')}
+    </tr>
+  `).join('') : '<tr><td colspan="100%" style="text-align: center; padding: 20px;">لا توجد بيانات متوفرة</td></tr>';
+
+  const theadHtml = headers.length > 0 ? `
+    <thead>
+      <tr>
+        ${headers.map(h => `<th>${h}</th>`).join('')}
+      </tr>
+    </thead>
+  ` : '';
+
+  return `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نسخة احتياطية - ${tableNameArabic}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1e293b;
+      --secondary: #475569;
+      --accent: #4f46e5;
+      --bg: #f8fafc;
+      --border: #e2e8f0;
+    }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background-color: var(--bg);
+      color: var(--primary);
+      margin: 0;
+      padding: 40px 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 24px 32px;
+      background: linear-gradient(135deg, #f1f5f9, #ffffff);
+      border-bottom: 2px solid var(--accent);
+    }
+    .header-right { text-align: right; }
+    .header-center { text-align: center; }
+    .header-left { text-align: left; }
+    .system-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+      margin: 0 0 4px 0;
+    }
+    .report-title {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--primary);
+      margin: 0;
+    }
+    .meta-text {
+      font-size: 13px;
+      color: var(--secondary);
+      font-weight: 600;
+      margin: 2px 0;
+    }
+    .table-wrapper {
+      overflow-x: auto;
+      padding: 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: right;
+    }
+    th {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      padding: 14px 16px;
+      font-size: 14px;
+      white-space: nowrap;
+      border: 1px solid var(--primary);
+    }
+    td {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--secondary);
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    td:last-child { border-left: 1px solid var(--border); }
+    tbody tr:nth-child(even) { background-color: #f8fafc; }
+    tbody tr:hover { background-color: #f1f5f9; }
+    .footer {
+      padding: 16px 32px;
+      background: #ffffff;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 12px;
+      color: var(--secondary);
+    }
+    @media print {
+      body { padding: 0; background: white; }
+      .container { box-shadow: none; border: none; }
+      .no-print { display: none; }
+      th { background: #f1f5f9; color: black; }
+      @page { margin: 1cm; size: landscape; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-right">
+        <h3 class="system-title">المحاسب الذكي ERP - نظام إدارة البيانات</h3>
+      </div>
+      <div class="header-center">
+        <h1 class="report-title">تقرير سجلات: ${tableNameArabic}</h1>
+      </div>
+      <div class="header-left">
+        <p class="meta-text">تاريخ التصدير: <span dir="ltr">${dateStr}</span></p>
+        <p class="meta-text">إجمالي السجلات: <strong style="color:var(--accent)">${rowCount}</strong></p>
+      </div>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        ${theadHtml}
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+    </div>
+    <div class="footer">
+      تم إنشاء هذا التقرير تلقائياً بواسطة نظام المحاسب الذكي ERP © ${new Date().getFullYear()}
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+};
+
 function BackupSection() {
   const addToast = useToast();
   const [backupState, setBackupState] = useState('idle');
   const [progress, setProgress] = useState({ current: 0, total: BACKUP_TABLES.length, label: '' });
 
+  const downloadSingleTable = async (key, label, mock) => {
+    try {
+      let data = mock;
+      if (supabaseReady && supabase) {
+        const { data: rows, error } = await supabase.from(key).select('*');
+        if (!error && rows?.length > 0) data = rows;
+      }
+      const htmlString = generateHTMLReport(label, key, data);
+      const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `نسخة_احتياطية_${key}_${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      addToast(`✓ تم تنزيل تقرير ${label} بنجاح`, 'success');
+    } catch (err) {
+      addToast('فشل التنزيل: ' + err.message, 'error');
+    }
+  };
+
   const handleFullBackup = async () => {
     setBackupState('loading');
     setProgress({ current: 0, total: BACKUP_TABLES.length, label: 'جارٍ جلب البيانات...' });
     try {
-      const tables = [];
       for (let i = 0; i < BACKUP_TABLES.length; i++) {
         const { key, label, mock } = BACKUP_TABLES[i];
         setProgress({ current: i + 1, total: BACKUP_TABLES.length, label });
@@ -99,12 +279,23 @@ function BackupSection() {
           const { data: rows, error } = await supabase.from(key).select('*');
           if (!error && rows?.length > 0) data = rows;
         }
-        tables.push({ name: key, data });
+
+        const htmlString = generateHTMLReport(label, key, data);
+        const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `نسخة_احتياطية_${key}_${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        await new Promise(r => setTimeout(r, 400)); // prevent browser lockup
       }
 
-      await exportMultipleToCSV(tables);
       setBackupState('success');
-      addToast(`✓ تم تنزيل ${tables.length} ملفات CSV بنجاح`, 'success');
+      addToast(`✓ تم تنزيل ${BACKUP_TABLES.length} تقارير HTML بنجاح`, 'success');
       setTimeout(() => setBackupState('idle'), 3500);
     } catch (err) {
       setBackupState('error');
@@ -132,7 +323,7 @@ function BackupSection() {
               </span>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed">
-              تصدير جميع جداول النظام كملفات CSV مضمّنة بترميز UTF-8 (متوافقة مع Excel)
+              تصدير جميع جداول النظام كتقارير HTML تفاعلية واحترافية جاهزة للطباعة والتحليل.
             </p>
           </div>
         </div>
@@ -143,14 +334,17 @@ function BackupSection() {
       <div className="px-4 md:px-6 py-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-5">
           {BACKUP_TABLES.map(({ key, label, mock }) => (
-            <div key={key}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs border border-white/5"
+            <button key={key}
+              onClick={() => downloadSingleTable(key, label, mock)}
+              title={`تنزيل تقرير ${label}`}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs border border-white/5 hover:bg-white/10 transition-colors text-left"
               style={{ background: 'rgba(255,255,255,0.02)' }}
             >
               <Database size={11} className="text-emerald-500/70 shrink-0" />
               <span className="text-slate-400 truncate">{label}</span>
-              <span className="ms-auto text-slate-700 font-mono text-[10px]">{mock.length}</span>
-            </div>
+              <Download size={10} className="ms-auto text-emerald-400/50" />
+              <span className="text-slate-700 font-mono text-[10px] ms-1">{mock.length}</span>
+            </button>
           ))}
         </div>
 
