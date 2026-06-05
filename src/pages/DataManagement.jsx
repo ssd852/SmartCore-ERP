@@ -73,47 +73,31 @@ function SectionCard({ children, glowColor = '#6366f1', danger = false }) {
    SECTION A — DATA BACKUP
 ═══════════════════════════════════════════ */
 
-const systemBlacklist = ['tenant_id', 'tenant_emp_id', 'id_secure', 'created_at', 'updated_at', 'created_by', 'password', 'user_id'];
+const systemBlacklist = ['tenant_id', 'tenant_emp_id', 'id_secure', 'updated_at', 'created_by', 'password', 'user_id'];
 
 const globalTranslations = {
-  // Joined Relational Names (From Step 1)
-  customer_name: "اسم العميل",
-  supplier_name: "اسم المورد / الشركة",
-  employee_name: "اسم الموظف",
-  
-  // Invoices
-  invoice_id: "رقم الفاتورة",
-  invoice_date: "تاريخ الفاتورة",
-  
-  // Employees & HR
-  name: "الاسم الرباعي",
-  position: "المسمى الوظيفي",
-  department: "القسم / الإدارة",
-  annual_leave_balance: "رصيد الإجازات السنوية",
-  sick_leave_balance: "رصيد الإجازات المرضية",
-  email: "البريد الإلكتروني",
-  
-  // Inventory
-  unit_price: "سعر الوحدة",
-  cost_price: "سعر التكلفة",
-  sale_price: "سعر البيع",
-  barcode: "الباركود",
-  min_stock_level: "الحد الأدنى للمخزون",
-  
-  // Customers & Suppliers
-  phone: "رقم الهاتف",
-  company: "الشركة / المؤسسة",
-  company_name: "اسم الشركة التجارية",
-  contact_person: "الشخص المسؤول",
-  tax_number: "الرقم الضريبي",
-  opening_balance: "الرصيد الافتتاحي",
-  current_balance: "الرصيد الحالي",
-  
-  // Common
-  status: "الحالة",
-  type: "النوع",
-  amount: "المبلغ",
-  total_amount: "الإجمالي"
+  // Joined Relational Names
+  employee_name: "اسم الموظف", customer_name: "اسم العميل", supplier_name: "اسم المورد / الشركة",
+
+  // IDs & Common
+  id: "الرقم المرجعي", created_at: "تاريخ الإنشاء", status: "الحالة", type: "النوع", total_amount: "الإجمالي", amount: "المبلغ",
+
+  // HR & Payroll
+  emp_id: "رقم الموظف", name: "الاسم الرباعي", position: "المسمى الوظيفي", department: "القسم / الإدارة",
+  salary: "الراتب", basic_salary: "الراتب الأساسي", allowances: "البدلات", deductions: "الاستقطاعات",
+  net_salary: "صافي الراتب", month_year: "الشهر/السنة", annual_leave_balance: "رصيد الإجازات السنوية",
+  sick_leave_balance: "رصيد الإجازات المرضية", email: "البريد الإلكتروني",
+
+  // Invoices & Checks
+  invoice_id: "رقم الفاتورة", invoice_number: "رقم الفاتورة", invoice_date: "تاريخ الفاتورة",
+  check_id: "معرف الشيك", check_number: "رقم الشيك", bank_name: "اسم البنك", due_date: "تاريخ الاستحقاق",
+  tax: "الضريبة", discount: "الخصم", customer_id: "رقم العميل", supplier_id: "رقم المورد",
+
+  // Inventory & Companies
+  item_name: "اسم الصنف", category: "الفئة", quantity: "الكمية", unit_price: "سعر الوحدة",
+  cost_price: "سعر التكلفة", sale_price: "سعر البيع", barcode: "الباركود", min_stock_level: "الحد الأدنى للمخزون",
+  company: "الشركة", company_name: "اسم الشركة", contact_person: "الشخص المسؤول", phone: "رقم الهاتف",
+  tax_number: "الرقم الضريبي", opening_balance: "الرصيد الافتتاحي", current_balance: "الرصيد الحالي"
 };
 
 const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
