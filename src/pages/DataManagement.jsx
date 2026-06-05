@@ -119,11 +119,33 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
   const dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const rowCount = data ? data.length : 0;
   
-  const headers = rowCount > 0 ? Object.keys(data[0]).filter(k => !systemBlacklist.includes(k)) : [];
+  let headers = rowCount > 0 ? Object.keys(data[0]).filter(k => !systemBlacklist.includes(k)) : [];
+  
+  // Smart Data Resolution: Remove ID column if human-readable name column exists
+  const relationalPairs = [
+    { idKey: 'emp_id', nameKey: 'employee_name' },
+    { idKey: 'customer_id', nameKey: 'customer_name' },
+    { idKey: 'supplier_id', nameKey: 'supplier_name' },
+    { idKey: 'item_id', nameKey: 'item_name' }
+  ];
+  relationalPairs.forEach(pair => {
+    if (headers.includes(pair.idKey) && headers.includes(pair.nameKey)) {
+      headers = headers.filter(k => k !== pair.idKey);
+    }
+  });
+
+  const formatCell = (val) => {
+    if (val === null || val === undefined) return '';
+    const str = String(val);
+    if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str)) {
+      return str.substring(0, 8) + '...';
+    }
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  };
 
   const rowsHtml = rowCount > 0 ? data.map(row => `
     <tr>
-      ${headers.map(h => `<td>${row[h] !== null && row[h] !== undefined ? String(row[h]).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : ''}</td>`).join('')}
+      ${headers.map(h => `<td>${formatCell(row[h])}</td>`).join('')}
     </tr>
   `).join('') : '<tr><td colspan="100%" style="text-align: center; padding: 20px; font-weight: bold; color: var(--secondary);">لا توجد سجلات مسجلة في هذا القسم حالياً.</td></tr>';
 
@@ -208,6 +230,7 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
       width: 100%;
       border-collapse: collapse;
       text-align: right;
+      border: 1px solid var(--border);
     }
     th {
       background: var(--primary);
@@ -269,7 +292,7 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
       </table>
     </div>
     <div class="footer">
-      تم إنشاء هذا التقرير تلقائياً بواسطة نظام المحاسب الذكي ERP © ${new Date().getFullYear()}
+      تم إنشاء هذا التقرير تلقائياً بواسطة نظام المحاسبة الذكي ERP © ${new Date().getFullYear()}
     </div>
   </div>
 </body>
