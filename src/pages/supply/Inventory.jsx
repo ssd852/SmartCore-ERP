@@ -37,6 +37,8 @@ function InventoryForm({ row, prefilledBarcode, onClose, onSave, isSaving }) {
     item_name: row?.item_name || '',
     category: row?.category || CATEGORIES[0],
     unit_price: row?.unit_price ?? '',
+    cost_price: row?.cost_price ?? '',
+    sale_price: row?.sale_price ?? '',
     quantity: row?.quantity ?? '',
     barcode: row?.barcode || prefilledBarcode || '',
     min_stock_level: row?.min_stock_level ?? 5,
@@ -73,6 +75,36 @@ function InventoryForm({ row, prefilledBarcode, onClose, onSave, isSaving }) {
         <div>
           <label className="block text-xs font-bold text-slate-400 mb-1.5">الحد الأدنى</label>
           <input className="erp-input text-left" dir="ltr" type="number" step="any" value={form.min_stock_level} onChange={e => set('min_stock_level', e.target.value)} required disabled={isSaving} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-bold text-amber-400/80 mb-1.5">سعر التكلفة (₪)</label>
+          <input
+            className="erp-input text-left"
+            dir="ltr"
+            type="number"
+            step="any"
+            min="0"
+            placeholder="0.00"
+            value={form.cost_price}
+            onChange={e => set('cost_price', e.target.value)}
+            disabled={isSaving}
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-emerald-400/80 mb-1.5">سعر البيع (₪)</label>
+          <input
+            className="erp-input text-left"
+            dir="ltr"
+            type="number"
+            step="any"
+            min="0"
+            placeholder="0.00"
+            value={form.sale_price}
+            onChange={e => set('sale_price', e.target.value)}
+            disabled={isSaving}
+          />
         </div>
       </div>
       <div className="flex gap-3 pt-2">
@@ -232,10 +264,20 @@ export default function Inventory() {
     setIsSaving(true);
     try {
       const isNew = !row?.item_id;
+      const payload = {
+        item_name: form.item_name,
+        category: form.category,
+        barcode: form.barcode,
+        unit_price: parseFloat(form.unit_price) || 0,
+        cost_price: parseFloat(form.cost_price) || 0,
+        sale_price: parseFloat(form.sale_price) || 0,
+        quantity: parseFloat(form.quantity) || 0,
+        min_stock_level: parseFloat(form.min_stock_level) || 5,
+      };
       if (!isNew) {
-        const { error } = await supabase.from('inventory').update(form).eq('item_id', row.item_id);
+        const { error } = await supabase.from('inventory').update(payload).eq('item_id', row.item_id);
         if (error) throw error;
-        setData(p => p.map(r => r.item_id === row.item_id ? { ...r, ...form } : r));
+        setData(p => p.map(r => r.item_id === row.item_id ? { ...r, ...payload } : r));
         
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
@@ -246,8 +288,7 @@ export default function Inventory() {
         addToast('تم التحديث ✓', 'info');
       } else {
         const user_id = await getAuthUserId();
-        const payload = { ...form, user_id };
-        const { data: newRecords, error } = await supabase.from('inventory').insert([payload]).select();
+        const { data: newRecords, error } = await supabase.from('inventory').insert([{ ...payload, user_id }]).select();
         if (error) throw error;
         if (newRecords && newRecords.length > 0) {
           const insertedRecord = newRecords[0];
@@ -280,11 +321,13 @@ export default function Inventory() {
   }, [data]);
 
   const columns = [
-    { key: 'item_name',  label: t('item_name') },
-    { key: 'barcode',    label: 'الباركود' },
-    { key: 'category',   label: t('category') },
-    { key: 'unit_price', label: t('unit_price') },
-    { key: 'quantity',   label: t('quantity') },
+    { key: 'item_name',      label: t('item_name') },
+    { key: 'barcode',        label: 'الباركود' },
+    { key: 'category',       label: t('category') },
+    { key: 'unit_price',     label: t('unit_price'),   render: (v) => v != null ? `₪ ${Number(v).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}` : '—' },
+    { key: 'cost_price',     label: 'سعر التكلفة',  render: (v) => v != null ? `₪ ${Number(v).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}` : '—' },
+    { key: 'sale_price',     label: 'سعر البيع',    render: (v) => v != null ? `₪ ${Number(v).toLocaleString('ar-EG', { minimumFractionDigits: 2 })}` : '—' },
+    { key: 'quantity',       label: t('quantity') },
     { key: 'min_stock_level', label: 'الحد الأدنى' },
   ];
 
