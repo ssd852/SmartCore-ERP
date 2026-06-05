@@ -72,6 +72,46 @@ function SectionCard({ children, glowColor = '#6366f1', danger = false }) {
 /* ═══════════════════════════════════════════
    SECTION A — DATA BACKUP
 ═══════════════════════════════════════════ */
+
+const columnTranslations = {
+  // Common Fields
+  id: "المعرف",
+  created_at: "تاريخ التسجيل",
+  status: "الحالة",
+  type: "النوع",
+  user_id: "رقم المستخدم",
+  created_by: "بواسطة",
+  
+  // Checks Module (From image_7dcba1.png)
+  check_id: "معرف الشيك",
+  check_number: "رقم الشيك",
+  bank_name: "اسم البنك",
+  due_date: "تاريخ الاستحقاق",
+  amount: "المبلغ",
+  
+  // Invoices (Sales & Purchases)
+  invoice_number: "رقم الفاتورة",
+  customer_name: "اسم العميل",
+  supplier_name: "اسم المورد",
+  total_amount: "إجمالي القيمة",
+  tax: "الضريبة",
+  discount: "الخصم",
+  
+  // Inventory & Items
+  item_name: "اسم الصنف",
+  sku: "رمز المنتج",
+  quantity: "الكمية المتوفرة",
+  price: "سعر الوحدة",
+  category: "الفئة",
+  
+  // HR & Payroll
+  employee_name: "اسم الموظف",
+  salary: "الراتب الأساسي",
+  net_salary: "صافي الراتب",
+  allowances: "البدلات",
+  deductions: "الاستقطاعات",
+  month: "الشهر"
+};
 const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
   const dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   const rowCount = data ? data.length : 0;
@@ -87,7 +127,10 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
   const theadHtml = headers.length > 0 ? `
     <thead>
       <tr>
-        ${headers.map(h => `<th>${h}</th>`).join('')}
+        ${headers.map(h => {
+          const translatedHeader = columnTranslations[h] || h;
+          return `<th>${translatedHeader}</th>`;
+        }).join('')}
       </tr>
     </thead>
   ` : '';
@@ -171,6 +214,7 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
       font-size: 14px;
       white-space: nowrap;
       border: 1px solid var(--primary);
+      text-align: right;
     }
     td {
       padding: 12px 16px;
