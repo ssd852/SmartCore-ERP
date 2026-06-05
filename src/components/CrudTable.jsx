@@ -26,7 +26,7 @@ function formatCell(key, val) {
 export default function CrudTable({
   title,
   icon: TitleIcon,
-  columns,       // [{ key, label, sortable? }]
+  columns,       // [{ key, label, sortable?, render? }]
   data,
   isLoading,
   onAdd,
@@ -39,6 +39,7 @@ export default function CrudTable({
   addLabel,
   accentColor = '#6366f1',
   onPrint,        // optional: (row) => void — renders a print button per row
+  printTitle,     // optional: Arabic title for the print header (defaults to title)
 }) {
   const { t } = useTranslation();
   const { lang, userRole } = useApp();
@@ -98,6 +99,15 @@ export default function CrudTable({
 
   return (
     <div className="flex flex-col gap-5">
+      {/* ── Print Header (hidden on screen, visible on print) ── */}
+      <div className="print-header">
+        <div className="print-header-right">
+          <div style={{fontWeight:900, fontSize:'13pt', color:'#4f46e5'}}>المحاسب الذكي ERP</div>
+          <div style={{fontSize:'9pt', color:'#64748b'}}>وثيقة رسمية معتمدة</div>
+        </div>
+        <div className="print-header-center">{printTitle || title}</div>
+        <div className="print-header-left">{new Date().toLocaleDateString('ar-EG')}</div>
+      </div>
       {/* ── Header Card ── */}
       <div
         className="glass-strong rounded-2xl px-4 py-3 md:px-5 md:py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
@@ -205,7 +215,11 @@ export default function CrudTable({
                 {paged.map((row, i) => (
                   <tr key={row.id ?? i} className="group">
                     {columns.map(col => (
-                      <td key={col.key}>{formatCell(col.key, row[col.key])}</td>
+                      <td key={col.key}>
+                        {col.render
+                          ? col.render(row[col.key], row)
+                          : formatCell(col.key, row[col.key])}
+                      </td>
                     ))}
                     {hasActions && (
                       <td>

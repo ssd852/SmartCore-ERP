@@ -333,6 +333,15 @@ export default function Inventory() {
 
   return (
     <div className="relative min-h-screen flex flex-col gap-6 w-full max-w-full">
+      {/* Print Header – hidden on screen, visible on print */}
+      <div className="print-header">
+        <div className="print-header-right">
+          <div style={{fontWeight:900,fontSize:'13pt',color:'#4f46e5'}}>المحاسب الذكي ERP</div>
+          <div style={{fontSize:'9pt',color:'#64748b'}}>وثيقة رسمية معتمدة</div>
+        </div>
+        <div className="print-header-center">تقرير المخزون العام وقطع الغيار</div>
+        <div className="print-header-left">{new Date().toLocaleDateString('ar-EG')}</div>
+      </div>
       {/* Premium Widescreen Header */}
       <div className="glass-strong rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t-2 border-indigo-500/40">
         <div className="flex items-center gap-4">
@@ -346,7 +355,7 @@ export default function Inventory() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex p-1 bg-slate-900/50 rounded-xl border border-white/5 w-full md:w-auto">
+        <div className="flex p-1 bg-slate-900/50 rounded-xl border border-white/5 w-full md:w-auto no-print">
           {[
             { id: 0, label: 'الجرد الحي', icon: Package },
             { id: 1, label: 'محطة الباركود', icon: ScanBarcode },

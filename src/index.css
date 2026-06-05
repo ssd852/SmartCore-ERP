@@ -226,7 +226,27 @@ body.lang-en {
   display: none;
 }
 
+/* ── Print header (hidden on screen, visible on print) ── */
+.print-header {
+  display: none;
+}
+
 @media print {
+  /* Reveal print header */
+  .print-header {
+    display: grid !important;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    border-bottom: 2px solid #1e293b;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    direction: rtl;
+    font-family: 'Tajawal', Arial, sans-serif;
+  }
+  .print-header-right { text-align: right; font-size: 11pt; color: #334155; font-weight: 600; }
+  .print-header-center { text-align: center; font-size: 16pt; font-weight: 900; color: #0f172a; }
+  .print-header-left  { text-align: left;  font-size: 10pt; color: #64748b; }
+
   /* ── When printing a single document, hide the router wrapper ── */
   body.print-single-mode #root > div:not(.print-document-layout) {
     display: none !important;
@@ -265,8 +285,8 @@ body.lang-en {
 
   /* ── Reset page & body ── */
   @page {
-    size: A4;
-    margin: 16mm 12mm;
+    size: A4 landscape;
+    margin: 1.5cm;
   }
 
   html, body, #root, .print-document-layout {

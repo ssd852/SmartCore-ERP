@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useTranslation } from 'react-i18next';
-import { Truck, Search, Plus, Loader2, AlertCircle, CheckCircle2, X, Wallet, ChevronLeft, ChevronRight, Hash, Trash2 } from 'lucide-react';
+import { Truck, Search, Plus, Printer, Loader2, AlertCircle, CheckCircle2, X, Wallet, ChevronLeft, ChevronRight, Hash, Trash2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { supabase, supabaseReady } from '../../config/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -141,6 +141,16 @@ export default function Suppliers() {
 
   return (
     <div className="min-h-screen bg-slate-950 p-6 font-['Tajawal'] text-white" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+
+      {/* Print Header – hidden on screen, visible on print */}
+      <div className="print-header">
+        <div className="print-header-right">
+          <div style={{fontWeight:900,fontSize:'13pt',color:'#4f46e5'}}>المحاسب الذكي ERP</div>
+          <div style={{fontSize:'9pt',color:'#64748b'}}>وثيقة رسمية معتمدة</div>
+        </div>
+        <div className="print-header-center">تقرير سجلات الموردين</div>
+        <div className="print-header-left">{new Date().toLocaleDateString('ar-EG')}</div>
+      </div>
       
       {/* Header Panel */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden mb-6 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -169,10 +179,17 @@ export default function Suppliers() {
           </div>
           <button 
             onClick={() => setShowAddModal(true)}
-            className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white py-3 px-6 rounded-xl font-bold text-sm transition-all shadow-lg shadow-amber-500/25 whitespace-nowrap active:scale-95"
+            className="no-print flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-500 text-white py-3 px-6 rounded-xl font-bold text-sm transition-all shadow-lg shadow-amber-500/25 whitespace-nowrap active:scale-95"
           >
             <Plus size={18} />
             إضافة مورد
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="no-print flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 py-3 px-5 rounded-xl font-bold text-sm transition-all whitespace-nowrap active:scale-95"
+          >
+            <Printer size={18} />
+            طباعة
           </button>
         </div>
       </div>
