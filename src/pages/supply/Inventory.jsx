@@ -151,11 +151,11 @@ export default function Inventory() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [scannedBarcode, setScannedBarcode] = useState('');
 
-  // Widescreen effect
+  // Widescreen effect — re-run fetch when authUser resolves after hydration
   useEffect(() => {
     setSidebarCollapsed(true);
     fetchData();
-  }, []);
+  }, [authUser?.id]);
 
   // Update refs for global listener
   useEffect(() => { terminalModeRef.current = terminalMode; }, [terminalMode]);
@@ -194,8 +194,8 @@ export default function Inventory() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      // SECURITY: enforce tenant isolation
-      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      // SECURITY: If auth hasn't hydrated yet, silently wait — do NOT throw
+      if (!currentTenantId) { setIsLoading(false); return; }
       const { data: rows, error } = await supabase.from('inventory').select('*').eq('tenant_id', currentTenantId).order('item_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);

@@ -121,8 +121,8 @@ export default function SalesInvoices() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      // SECURITY: enforce tenant isolation on all sales queries
-      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      // SECURITY: If auth hasn't hydrated yet, silently wait — do NOT throw
+      if (!currentTenantId) { setIsLoading(false); return; }
       const { data: rows, error } = await supabase.from('sales').select('*').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
@@ -134,7 +134,7 @@ export default function SalesInvoices() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [authUser?.id]);
 
   const handleSave = async (form, row, onClose) => {
     setIsSaving(true);

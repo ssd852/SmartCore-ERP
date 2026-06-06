@@ -103,7 +103,7 @@ export default function Reports() {
     }
 
     fetchAll();
-  }, []);
+  }, [authUser?.id]);
 
   const { totalSales, totalPurchases, totalPayroll, netProfit, salesByStatus, payrollRows, counts } = stats;
   const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'ILS' }).format(Number(n) || 0);
