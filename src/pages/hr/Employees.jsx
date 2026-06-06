@@ -125,12 +125,12 @@ export default function Employees() {
     notes: ''
   });
 
-  // Widescreen Mode & Fetch Data
+  // Widescreen Mode & Fetch Data — re-run when authUser resolves after hydration
   useEffect(() => {
     setSidebarCollapsed(true);
     fetchData();
     return () => setSidebarCollapsed(false);
-  }, []);
+  }, [authUser?.id]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -143,8 +143,10 @@ export default function Employees() {
         currentTenant = session.user.id;
         setTenantId(currentTenant);
       }
-      
-      if (!currentTenant) throw new Error('يرجى تسجيل الدخول أولاً');
+
+      // SECURITY: If auth hasn't hydrated yet, silently wait — do NOT throw
+      // The useEffect dep on authUser?.id will re-fire once the session resolves.
+      if (!currentTenant) { setIsLoading(false); return; }
       
       const [empRes, payRes, attRes, advRes, settingsRes] = await Promise.all([
         supabase.from('employees').select('*').eq('tenant_id', currentTenant).order('emp_id', { ascending: false }),
