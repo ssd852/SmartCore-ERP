@@ -98,7 +98,7 @@ export default function ChartOfAccounts() {
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();
-        const payload = { ...form, user_id };
+        const payload = { ...form, user_id, tenant_id: currentTenantId };
         const { data: newRecords, error } = await supabase.from('accounts').insert([payload]).select();
         if (error) throw error;
         if (newRecords && newRecords.length > 0) setData(p => [newRecords[0], ...p]);

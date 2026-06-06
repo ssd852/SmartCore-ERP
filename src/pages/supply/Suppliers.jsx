@@ -67,7 +67,8 @@ export default function Suppliers() {
         phone: form.phone,
         email: form.email,
         tax_number: form.tax_number,
-        current_balance: Number(form.current_balance) || 0
+        current_balance: Number(form.current_balance) || 0,
+        tenant_id: currentTenantId
       };
 
       const { error } = await supabase.from('suppliers').insert([payload]);
