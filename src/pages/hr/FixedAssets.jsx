@@ -110,7 +110,8 @@ export default function FixedAssets() {
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
           action: `تم تعديل بيانات الأصل الثابت (${form.asset_name || row.asset_name}) في النظام.`, 
-          module: 'assets' 
+          module: 'assets',
+          tenant_id: currentTenantId,
         }]);
 
         addToast(t('edit') + ' ✓', 'info');
@@ -125,10 +126,11 @@ export default function FixedAssets() {
           await supabase.from('notifications').insert([{
             title: `🏢 الأصول الثابتة: تم قيد أصل مالي جديد بنجاح`,
             type: 'assets',
-            is_read: false
+            is_read: false,
+            tenant_id: currentTenantId,
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل أصل ثابت جديد بنجاح في النظام.`, module: 'assets' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل أصل ثابت جديد بنجاح في النظام.`, module: 'assets', tenant_id: currentTenantId }]);
         } else {
           await fetchData();
         }
@@ -153,10 +155,12 @@ export default function FixedAssets() {
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
         action: `تم حذف سجل الأصل الثابت نهائياً بواسطة المستخدم المخول.`, 
-        module: 'assets' 
+        module: 'assets',
+        tenant_id: currentTenantId,
       }]);
 
       addToast(t('delete') + ' ✓', 'warning');
+
     } catch (err) {
       console.error('Delete Asset Error:', err);
       addToast(err.message || 'Failed to delete data', 'error');

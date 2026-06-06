@@ -154,7 +154,8 @@ export default function Payroll() {
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
           action: `تم تعديل بيانات مسير الرواتب (معرف: ${row.payroll_id}) في النظام.`, 
-          module: 'payroll' 
+          module: 'payroll',
+          tenant_id: currentTenantId,
         }]);
 
         addToast(t('edit') + ' ✓', 'info');
@@ -169,10 +170,11 @@ export default function Payroll() {
           await supabase.from('notifications').insert([{
             title: `💵 الرواتب: تم إتمام واعتماد مسير رواتب جديد في النظام`,
             type: 'payroll',
-            is_read: false
+            is_read: false,
+            tenant_id: currentTenantId,
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل مسير رواتب جديد بنجاح في النظام.`, module: 'payroll' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل مسير رواتب جديد بنجاح في النظام.`, module: 'payroll', tenant_id: currentTenantId }]);
         } else {
           await fetchData();
         }
@@ -197,7 +199,8 @@ export default function Payroll() {
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
         action: `تم حذف سجل مسير الرواتب نهائياً بواسطة المستخدم المخول.`, 
-        module: 'payroll' 
+        module: 'payroll',
+        tenant_id: currentTenantId,
       }]);
 
       addToast(t('delete') + ' ✓', 'warning');
@@ -206,6 +209,7 @@ export default function Payroll() {
       addToast(err.message || 'Failed to delete data', 'error');
     }
   };
+
 
   const form = ({ row, onClose }) => (
     <PayrollForm row={row} onClose={onClose} isSaving={isSaving} currentTenantId={currentTenantId} onSave={(f) => handleSave(f, row, onClose)} />

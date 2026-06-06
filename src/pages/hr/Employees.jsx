@@ -309,13 +309,15 @@ export default function Employees() {
         await supabase.from('activity_logs').insert([{
           user_name: currentActor,
           action: `تم تعديل بيانات الموظف (${form.name || row.name || 'تلقائي'}) في النظام.`,
-          module: 'hr'
+          module: 'hr',
+          tenant_id: tenantId,
         }]);
         
         await supabase.from('notifications').insert([{
           title: `👤 الموارد البشرية: تم تعديل بيانات الموظف (${form.name || row.name || 'تلقائي'})`,
           type: 'hr',
-          is_read: false
+          is_read: false,
+          tenant_id: tenantId,
         }]);
 
         addToast(t('edit') + ' ✓', 'info');
@@ -331,10 +333,11 @@ export default function Employees() {
            await supabase.from('notifications').insert([{
              title: `👤 الموارد البشرية: تم تسجيل الموظف الجديد (${newEmp.name || 'تلقائي'}) في النظام`,
              type: 'hr',
-             is_read: false
+             is_read: false,
+             tenant_id: currentTenant,
            }]);
 
-           await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل الموظف (${newEmp.name || 'تلقائي'}) بنجاح في النظام.`, module: 'hr' }]);
+           await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل الموظف (${newEmp.name || 'تلقائي'}) بنجاح في النظام.`, module: 'hr', tenant_id: currentTenant }]);
         }
         else {
            await fetchData();
@@ -445,10 +448,12 @@ export default function Employees() {
       await supabase.from('activity_logs').insert([{
         user_name: currentActor,
         action: `تم حذف سجل الموظف (${row.name || 'مجهول'}) نهائياً بواسطة المستخدم المخول.`,
-        module: 'hr'
+        module: 'hr',
+        tenant_id: tenantId,
       }]);
 
       addToast(t('delete') + ' ✓', 'warning');
+
     } catch (err) {
       addToast(err.message || 'Failed to delete data', 'error');
     }

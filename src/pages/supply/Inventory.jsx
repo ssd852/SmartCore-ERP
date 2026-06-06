@@ -286,7 +286,8 @@ export default function Inventory() {
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
           action: `تم تعديل بيانات الصنف المخزني (${form.item_name || row.item_name || 'تلقائي'}) في النظام.`, 
-          module: 'inventory' 
+          module: 'inventory',
+          tenant_id: currentTenantId,
         }]);
 
         addToast('تم التحديث ✓', 'info');
@@ -300,10 +301,11 @@ export default function Inventory() {
           await supabase.from('notifications').insert([{
             title: `📦 تنبيه مخزون: تم إضافة صنف جديد (${insertedRecord.item_name || 'تلقائي'}) للمستودع`,
             type: 'stock',
-            is_read: false
+            is_read: false,
+            tenant_id: currentTenantId,
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل الصنف المخزني (${insertedRecord.item_name || 'تلقائي'}) بنجاح في النظام.`, module: 'inventory' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل الصنف المخزني (${insertedRecord.item_name || 'تلقائي'}) بنجاح في النظام.`, module: 'inventory', tenant_id: currentTenantId }]);
         } else {
           await fetchData();
         }
@@ -413,7 +415,8 @@ export default function Inventory() {
                  await supabase.from('activity_logs').insert([{
                    user_name: currentActor,
                    action: `تم حذف سجل الصنف المخزني (${row.item_name || 'بدون اسم'}) نهائياً بواسطة المستخدم المخول.`,
-                   module: 'inventory'
+                   module: 'inventory',
+                   tenant_id: currentTenantId,
                  }]);
               }}
               addForm={({ row, onClose }) => <InventoryForm row={row} onClose={onClose} isSaving={isSaving} onSave={(f) => handleSaveItem(f, row, onClose)} />} 
@@ -423,6 +426,7 @@ export default function Inventory() {
             />
           </motion.div>
         )}
+
 
         {activeTab === 1 && (
           <motion.div key="tab1" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col gap-6">

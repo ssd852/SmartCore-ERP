@@ -150,7 +150,8 @@ export default function PurchaseInvoices() {
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
           action: `تم تعديل بيانات فاتورة التوريد والمشتريات رقم #${row.invoice_id} في النظام.`, 
-          module: 'purchase' 
+          module: 'purchase',
+          tenant_id: currentTenantId,
         }]);
 
         addToast(t('edit') + ' ✓', 'info');
@@ -175,13 +176,15 @@ export default function PurchaseInvoices() {
           await supabase.from('notifications').insert([{
             title: `📥 المشتريات: تم تسجيل فاتورة توريد جديدة رقم #${insertedRecord.invoice_id || insertedRecord.id || 'تلقائي'} بانتظار الجرد`,
             type: 'purchase',
-            is_read: false
+            is_read: false,
+            tenant_id: currentTenantId,
           }]);
 
           await supabase.from('activity_logs').insert([{ 
             user_name: currentActor, 
             action: `تم تسجيل فاتورة توريد ومشتريات جديدة رقم #${insertedRecord.invoice_id || insertedRecord.id || 'تلقائي'} بنجاح في النظام.`, 
-            module: 'purchase' 
+            module: 'purchase',
+            tenant_id: currentTenantId,
           }]);
         } else {
           await fetchData();
@@ -207,7 +210,8 @@ export default function PurchaseInvoices() {
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
         action: `تم حذف سجل فاتورة المشتريات رقم #${row.invoice_id || 'تلقائي'} نهائياً بواسطة المستخدم المخول.`, 
-        module: 'purchase' 
+        module: 'purchase',
+        tenant_id: currentTenantId,
       }]);
 
       addToast(t('delete') + ' ✓', 'warning');
@@ -216,6 +220,7 @@ export default function PurchaseInvoices() {
       addToast(err.message || 'Failed to delete data', 'error');
     }
   };
+
 
   const form = ({ row, onClose }) => (
     <PurchaseInvoiceForm row={row} onClose={onClose} isSaving={isSaving} currentTenantId={currentTenantId} onSave={(f) => handleSave(f, row, onClose)} />

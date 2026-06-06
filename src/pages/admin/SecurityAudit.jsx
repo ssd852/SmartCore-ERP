@@ -7,11 +7,14 @@ import { motion } from 'framer-motion';
 
 export default function SecurityAudit() {
   const { t } = useTranslation();
-  const { userRole, lang } = useApp();
+  const { userRole, lang, authUser } = useApp();
   const [logs, setLogs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterModule, setFilterModule] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // SECURITY: resolve tenant ID from live AppContext (backed by active JWT session)
+  const currentTenantId = authUser?.id;
 
   // Strict Client-side Auth
   if (userRole !== 'Admin' && userRole !== 'Superadmin') {
@@ -26,23 +29,37 @@ export default function SecurityAudit() {
     );
   }
 
-  const fetchLogs = async () => {
-    setIsLoading(true);
-    try {
-      if (!supabaseReady) return;
-      const { data, error } = await supabase.from('activity_logs').select('*').order('created_at', { ascending: false }).limit(100);
-      if (error) throw error;
-      setLogs(data || []);
-    } catch (err) {
-      console.error('Audit Fetch Error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchLogs = async () => {
+      setIsLoading(true);
+      try {
+        if (!supabaseReady) return;
+        // SECURITY: resolve tenant from live session as the authoritative ground-truth
+        const { data: { session } } = await supabase.auth.getSession();
+        const tenantId = session?.user?.id;
+        if (!tenantId) {
+          console.warn('[SecurityAudit] No authenticated tenant — aborting activity_logs fetch to prevent cross-tenant leak.');
+          setLogs([]);
+          return;
+        }
+        // Strictly query activity_logs filtered by the current tenant only
+        const { data, error } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .eq('tenant_id', tenantId)
+          .order('created_at', { ascending: false })
+          .limit(200);
+        if (error) throw error;
+        setLogs(data || []);
+      } catch (err) {
+        console.error('Audit Fetch Error:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
     fetchLogs();
-  }, []);
+  }, [currentTenantId]);
+
 
   const moduleColors = {
     sales: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 shadow-[0_0_10px_rgba(16,185,129,0.2)]',

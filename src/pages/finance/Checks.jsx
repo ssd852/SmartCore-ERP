@@ -121,7 +121,8 @@ export default function Checks() {
         await supabase.from('activity_logs').insert([{ 
           user_name: currentActor, 
           action: `تم تعديل بيانات الشيك المالي رقم #${row.check_number || row.check_id} في النظام.`, 
-          module: 'finance' 
+          module: 'finance',
+          tenant_id: currentTenantId,
         }]);
 
         addToast(t('edit') + ' ✓', 'info');
@@ -136,10 +137,11 @@ export default function Checks() {
           await supabase.from('notifications').insert([{
             title: `🎫 حركة مالية: تم إصدار/تسجيل شيك مالي جديد رقم #${insertedRecord.check_number || 'تلقائي'}`,
             type: 'finance',
-            is_read: false
+            is_read: false,
+            tenant_id: currentTenantId,
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل شيك مالي جديد رقم #${insertedRecord.check_number || 'تلقائي'} بنجاح في النظام.`, module: 'finance' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل شيك مالي جديد رقم #${insertedRecord.check_number || 'تلقائي'} بنجاح في النظام.`, module: 'finance', tenant_id: currentTenantId }]);
         } else {
           await fetchData();
         }
@@ -164,10 +166,12 @@ export default function Checks() {
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
         action: `تم حذف سجل الشيك المالي رقم #${row.check_number || row.check_id || 'تلقائي'} نهائياً بواسطة المستخدم المخول.`, 
-        module: 'finance' 
+        module: 'finance',
+        tenant_id: currentTenantId,
       }]);
 
       addToast(t('delete') + ' ✓', 'warning');
+
     } catch (err) {
       console.error('Delete Check Error:', err);
       addToast(err.message || 'Failed to delete data', 'error');

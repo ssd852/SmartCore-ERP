@@ -185,16 +185,26 @@ export default function Login() {
       ['userRole', 'sb-access-token', 'sb-refresh-token'].forEach(k => localStorage.removeItem(k));
 
       if (isRegistering) {
+        // SECURITY: Generate a cryptographically random UUID as this tenant's unique
+        // isolation boundary. This is embedded in the user's JWT metadata so every
+        // subsequent query can filter by auth.uid() or user_metadata.tenant_id.
+        // NEVER default to null, '', or a shared/master tenant ID.
+        const newTenantId = crypto.randomUUID();
+
         const { error: signUpErr } = await supabase.auth.signUp({ 
           email, 
           password,
           options: {
-            data: { role: role }
+            data: {
+              role: role,
+              tenant_id: newTenantId,   // unique isolation scope for this tenant
+            }
           }
         });
         if (signUpErr) throw signUpErr;
         setSuccessMsg(lang === 'ar' ? 'تم إنشاء الحساب! جاري التوجيه...' : 'Account created! Redirecting...');
         setTimeout(() => navigate('/'), 1400);
+
       } else {
         const { data, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
         if (signInErr) throw signInErr;

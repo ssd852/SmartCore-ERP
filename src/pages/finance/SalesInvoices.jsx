@@ -149,13 +149,15 @@ export default function SalesInvoices() {
         await supabase.from('activity_logs').insert([{
           user_name: currentActor,
           action: `تم تعديل بيانات فاتورة مبيعات رقم #${row.invoice_id} في النظام.`,
-          module: 'sales'
+          module: 'sales',
+          tenant_id: currentTenantId,
         }]);
         
         await supabase.from('notifications').insert([{
           title: `تم تعديل فاتورة مبيعات رقم #${row.invoice_id} 📑`,
           type: 'invoice',
-          is_read: false
+          is_read: false,
+          tenant_id: currentTenantId,
         }]);
 
         addToast(t('edit') + ' ✓', 'info');
@@ -173,10 +175,11 @@ export default function SalesInvoices() {
           await supabase.from('notifications').insert([{
             title: `تم إضافة فاتورة جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بقيمة ${insertedInvoice.amount} 📑`,
             type: 'invoice',
-            is_read: false
+            is_read: false,
+            tenant_id: currentTenantId,
           }]);
 
-          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل فاتورة مبيعات جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بنجاح في النظام.`, module: 'sales' }]);
+          await supabase.from('activity_logs').insert([{ user_name: currentActor, action: `تم تسجيل فاتورة مبيعات جديدة رقم #${insertedInvoice.invoice_id || 'تلقائي'} بنجاح في النظام.`, module: 'sales', tenant_id: currentTenantId }]);
         } else {
           await fetchData();
         }
@@ -202,7 +205,8 @@ export default function SalesInvoices() {
       await supabase.from('activity_logs').insert([{ 
         user_name: currentActor, 
         action: `تم حذف سجل فاتورة مبيعات رقم #${row.invoice_id || 'تلقائي'} نهائياً بواسطة المستخدم المخول.`, 
-        module: 'sales' 
+        module: 'sales',
+        tenant_id: currentTenantId,
       }]);
 
       addToast(t('delete') + ' ✓', 'warning');
@@ -211,6 +215,7 @@ export default function SalesInvoices() {
       addToast(err.message || 'Failed to delete data', 'error');
     }
   };
+
 
   const form = ({ row, onClose }) => (
     <SalesInvoiceForm row={row} onClose={onClose} isSaving={isSaving} currentTenantId={currentTenantId} onSave={(f) => handleSave(f, row, onClose)} />
