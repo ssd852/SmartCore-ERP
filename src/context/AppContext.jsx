@@ -89,28 +89,50 @@ export function AppProvider({ children }) {
     document.body.className = lang === 'en' ? 'lang-en' : '';
     if (theme === 'dark') document.documentElement.classList.add('dark');
 
-    const fetchTenant = async () => {
+    // Tracks the last known tenant so we can detect mid-session changes
+    let lastKnownTenantId = null;
+
+    const fetchTenant = async (userId) => {
+      if (!supabaseReady) return;
+      // ── SECURITY: if the tenant changed (e.g. account switch), purge old profile first
+      if (lastKnownTenantId && lastKnownTenantId !== userId) {
+        console.warn('[AppContext] Tenant ID changed — purging previous tenant profile from memory.');
+        setTenantProfile(null);
+      }
+      lastKnownTenantId = userId;
+
+      const { data, error } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('tenant_id', userId)
+        .single();
+      if (data && !error) {
+        setTenantProfile(data);
+      } else {
+        setTenantProfile(null);
+      }
+    };
+
+    const bootstrap = async () => {
       if (!supabaseReady) return;
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setAuthUser(session.user);
-        const { data, error } = await supabase
-          .from('tenants')
-          .select('*')
-          .eq('tenant_id', session.user.id)
-          .single();
-        if (data && !error) {
-          setTenantProfile(data);
-        }
+        await fetchTenant(session.user.id);
       }
     };
-    fetchTenant();
+    bootstrap();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setAuthUser(session.user);
-        fetchTenant();
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[AppContext] Auth event:', event);
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+        if (session?.user) {
+          setAuthUser(session.user);
+          await fetchTenant(session.user.id);
+        }
       } else if (event === 'SIGNED_OUT') {
+        // ── SECURITY: Fully purge all tenant-scoped state from memory on sign-out ──
+        lastKnownTenantId = null;
         setAuthUser(null);
         setTenantProfile(null);
       }

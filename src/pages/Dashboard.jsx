@@ -45,17 +45,17 @@ const DEFAULT_STATS = {
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const { lang, authUser } = useApp();
+  const { lang, authUser, userRole } = useApp();
 
   const [stats, setStats]       = useState(DEFAULT_STATS);
   const [isLoading, setIsLoading] = useState(true);
 
-  /* ── Read the logged-in role for welcome text ── */
-  const userRole = localStorage.getItem('userRole') || 'Admin';
+  /* ── Read the logged-in role from live AppContext (never from stale localStorage) ── */
   const roleLabel =
-    userRole === 'Admin'     ? (lang === 'ar' ? 'مدير النظام' : 'Admin') :
-    userRole === 'Accountant'? (lang === 'ar' ? 'محاسب'       : 'Accountant') :
-                               (lang === 'ar' ? 'مدقق'        : 'Auditor');
+    userRole === 'Superadmin' ? (lang === 'ar' ? 'مدير النظام' : 'Super Admin') :
+    userRole === 'Admin'      ? (lang === 'ar' ? 'مدير النظام' : 'Admin') :
+    userRole === 'Accountant' ? (lang === 'ar' ? 'محاسب'       : 'Accountant') :
+                                (lang === 'ar' ? 'مدقق'        : 'Auditor');
 
   useEffect(() => {
     if (!supabaseReady) {

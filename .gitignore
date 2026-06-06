@@ -11,6 +11,10 @@ node_modules
 dist
 dist-ssr
 *.local
+# Environment variable files — NEVER commit secrets to source control
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

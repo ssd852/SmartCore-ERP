@@ -177,6 +177,13 @@ export default function Login() {
         return;
       }
 
+      // ── SECURITY: Purge any cached session before accepting new credentials.
+      // This prevents a scenario where tenant A's auth scope bleeds into tenant B's
+      // fresh session during a fast user-switch without a full page reload.
+      try { await supabase.auth.signOut({ scope: 'local' }); } catch (_) {}
+      // Also clear legacy role keys that may be stale from a previous session
+      ['userRole', 'sb-access-token', 'sb-refresh-token'].forEach(k => localStorage.removeItem(k));
+
       if (isRegistering) {
         const { error: signUpErr } = await supabase.auth.signUp({ 
           email, 

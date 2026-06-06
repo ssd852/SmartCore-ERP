@@ -83,7 +83,18 @@ export default function Topbar({ onMenuClick }) {
   }, []);
 
   const handleLogout = async () => {
-    try { await supabase?.auth?.signOut(); } catch (_) {}
+    // ── SECURITY: Multi-step session purge ──
+    // Step 1: Revoke the JWT on Supabase's server and clear the persisted session
+    try { await supabase?.auth?.signOut({ scope: 'local' }); } catch (_) {}
+    // Step 2: Purge all tenant-scoped and role-scoped keys from localStorage
+    // to prevent stale data leaking into the next login session.
+    const TENANT_KEYS = [
+      'userRole',            // legacy role key written by older code paths
+      'sb-access-token',     // belt-and-suspenders: Supabase SDK own keys
+      'sb-refresh-token',
+    ];
+    TENANT_KEYS.forEach(key => localStorage.removeItem(key));
+    // Step 3: Navigate to login — React Router will unmount all data-fetching components
     navigate('/login');
   };
 
@@ -93,11 +104,19 @@ export default function Topbar({ onMenuClick }) {
   const [notifications, setNotifications] = useState([]);
 
   // Fetch existing notifications and subscribe to real-time inserts
+  // SECURITY: gated on authUser so this never runs for an unauthenticated/signed-out user
   useEffect(() => {
+    if (!authUser?.id) {
+      setNotifications([]);
+      return;
+    }
+    const tenantId = authUser.id;
+
     const fetchNotifications = async () => {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
+        .eq('tenant_id', tenantId)
         .order('created_at', { ascending: false })
         .limit(20);
       if (!error && data) {
@@ -118,8 +137,8 @@ export default function Topbar({ onMenuClick }) {
 
     // Subscribe to new notifications using Supabase Realtime
     const channel = supabase
-      .channel('schema-db-changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+      .channel(`notifications-${tenantId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `tenant_id=eq.${tenantId}` }, (payload) => {
         const newNotif = {
           id: payload.new.id,
           title: payload.new.title,
@@ -137,7 +156,7 @@ export default function Topbar({ onMenuClick }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [authUser?.id]);
 
   const handleMarkAsRead = async (id) => {
     // Optimistic UI update
