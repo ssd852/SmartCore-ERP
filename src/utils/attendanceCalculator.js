@@ -44,15 +44,17 @@ export function calculateAttendanceStats(log, settings = {}, dateStr = null) {
     }
   }
   
-  let statusColor = 'green';
-  if (isHoliday && totalMinutes > 0) statusColor = 'indigo'; // Special color for worked holiday
-  else if (deficitMinutes > 15) statusColor = 'amber';
-  else if (overtimeMinutes > 0) statusColor = 'purple';
+  let status = 'present';
+  let statusColor = 'emerald';
+  if (isHoliday && totalMinutes > 0) { status = 'holiday_worked'; statusColor = 'indigo'; }
+  else if (deficitMinutes > 15) { status = 'late'; statusColor = 'amber'; }
+  else if (overtimeMinutes > 0) { status = 'overtime'; statusColor = 'indigo'; }
   
   return {
     totalMinutes,
     deficitMinutes,
     overtimeMinutes,
+    status,
     statusColor,
     isHoliday,
     isComplete: !!log.clock_out_time

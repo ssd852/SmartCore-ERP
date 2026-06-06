@@ -78,7 +78,7 @@
   "due_date": "تاريخ الاستحقاق",
   "type": "النوع",
   "value": "القيمة",
-  "depreciation": "الاستهلاك",
+  "depreciation": "الإهلاك",
   "purchase_date": "تاريخ الشراء",
   "month_year": "الشهر / السنة",
   "logout": "تسجيل الخروج",
@@ -121,9 +121,9 @@
   "equity": "حقوق ملكية",
   "incoming": "وارد",
   "outgoing": "صادر",
-  "system_tools": "أدوات النظام",
   "sql_engine": "محرك SQL",
   "data_management": "إدارة البيانات",
   "admin_security": "الرقابة الأمنية",
-  "security_audit": "سجل الرقابة الأمني"
+  "security_audit": "التدقيق الأمني",
+  "success_saved": "تم الحفظ بنجاح"
 }

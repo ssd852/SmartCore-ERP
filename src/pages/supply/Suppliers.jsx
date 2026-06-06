@@ -127,7 +127,7 @@ export default function Suppliers() {
     
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { error } = await supabase.from('suppliers').delete().eq('id', supplierId);
+      const { error } = await supabase.from('suppliers').delete().eq('id', supplierId).eq('tenant_id', currentTenantId);
       if (error) throw error;
       
       setData(p => p.filter(s => s.id !== supplierId));

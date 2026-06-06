@@ -78,7 +78,7 @@ function PayrollForm({ row, onClose, onSave, isSaving, currentTenantId }) {
       </div>
       <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 flex items-center justify-between" dir="ltr">
         <span className="font-mono text-lg font-black text-emerald-400 text-left">{formatCurrency(net_salary)}</span>
-        <span className="text-sm font-bold text-emerald-400 text-right">صافي الراتب:</span>
+        <span className="text-sm font-bold text-emerald-400 text-right">{t('net_salary')}:</span>
       </div>
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={onClose} disabled={isSaving} className="flex-1 py-2.5 rounded-xl text-sm font-bold text-slate-400 border border-white/10 hover:bg-white/5 transition-all disabled:opacity-50">
@@ -161,7 +161,7 @@ export default function Payroll() {
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();
-        const payload = { ...form, user_id };
+        const payload = { ...form, user_id, tenant_id: currentTenantId };
         const { data: newRecords, error } = await supabase.from('payroll').insert([payload]).select();
         if (error) throw error;
         if (newRecords && newRecords.length > 0) {

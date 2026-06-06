@@ -16,12 +16,16 @@ const INIT = {
 
 export default function Reports() {
   const { t } = useTranslation();
-  const { isDevMode, tenantProfile } = useApp();
+  const { isDevMode, tenantProfile, authUser } = useApp();
   const [stats, setStats] = useState(INIT);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!supabaseReady) { setIsLoading(false); return; }
+
+    // SECURITY: Resolve tenant ID before any query
+    const currentTenantId = authUser?.id;
+    if (!currentTenantId) { setIsLoading(false); return; }
 
     async function fetchAll() {
       setIsLoading(true);
@@ -30,13 +34,13 @@ export default function Reports() {
           salesRes, purchasesRes, payrollRes,
           suppliersRes, customersRes, inventoryRes, employeesRes,
         ] = await Promise.allSettled([
-          supabase.from('sales').select('amount, status'),
-          supabase.from('purchases').select('total_amount'),
-          supabase.from('payroll').select('net_salary, basic_salary, emp_id, month_year').order('id', { ascending: false }).limit(6),
-          supabase.from('suppliers').select('*', { count: 'exact', head: true }),
-          supabase.from('customers').select('*', { count: 'exact', head: true }),
-          supabase.from('inventory').select('*', { count: 'exact', head: true }),
-          supabase.from('employees').select('*', { count: 'exact', head: true }),
+          supabase.from('sales').select('amount, status').eq('tenant_id', currentTenantId),
+          supabase.from('purchases').select('total_amount').eq('tenant_id', currentTenantId),
+          supabase.from('payroll').select('net_salary, basic_salary, emp_id, month_year').eq('tenant_id', currentTenantId).order('id', { ascending: false }).limit(6),
+          supabase.from('suppliers').select('*', { count: 'exact', head: true }).eq('tenant_id', currentTenantId),
+          supabase.from('customers').select('*', { count: 'exact', head: true }).eq('tenant_id', currentTenantId),
+          supabase.from('inventory').select('*', { count: 'exact', head: true }).eq('tenant_id', currentTenantId),
+          supabase.from('employees').select('*', { count: 'exact', head: true }).eq('tenant_id', currentTenantId),
         ]);
 
         const ok = (res) =>

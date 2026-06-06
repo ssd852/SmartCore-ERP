@@ -7,8 +7,17 @@ export default function SubscriptionGuard({ children, isCore = false }) {
   const { tenantProfile } = useApp();
   const { t } = useTranslation();
 
-  // If loading or no profile, let it render (or we could show a loader)
-  if (!tenantProfile) return children;
+  // SECURITY: Block access if tenant profile is missing or still loading
+  if (!tenantProfile) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-full min-h-[60vh] p-4 text-center">
+        <div className="w-16 h-16 rounded-2xl mb-4 flex items-center justify-center bg-slate-500/10 border border-slate-500/20">
+          <AlertTriangle size={28} className="text-slate-400 animate-pulse" />
+        </div>
+        <p className="text-slate-500 text-sm font-medium">{t('loading')}</p>
+      </div>
+    );
+  }
 
   const expiryDate = new Date(tenantProfile.subscription_expiry_date);
   const isExpired = new Date() > expiryDate;

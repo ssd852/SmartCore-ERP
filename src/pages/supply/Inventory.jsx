@@ -293,7 +293,7 @@ export default function Inventory() {
         addToast('تم التحديث ✓', 'info');
       } else {
         const user_id = await getAuthUserId();
-        const { data: newRecords, error } = await supabase.from('inventory').insert([{ ...payload, user_id }]).select();
+        const { data: newRecords, error } = await supabase.from('inventory').insert([{ ...payload, user_id, tenant_id: currentTenantId }]).select();
         if (error) throw error;
         if (newRecords && newRecords.length > 0) {
           const insertedRecord = newRecords[0];

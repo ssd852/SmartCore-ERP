@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Shield, User, Mail } from 'lucide-react';
 
 export default function Profile() {
-  const { lang } = useApp();
+  const { lang, authUser, userRole } = useApp();
   
   const [sessionUser, setSessionUser] = useState(null);
 
@@ -45,8 +45,8 @@ export default function Profile() {
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 mb-4">
               <User size={40} />
             </div>
-            <h2 className="text-xl font-bold text-white mb-1">مسؤول النظام</h2>
-            <p className="text-sm text-indigo-400 font-bold bg-indigo-500/10 px-3 py-1 rounded-full mb-4">Super Admin</p>
+            <h2 className="text-xl font-bold text-white mb-1">{authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'مسؤول النظام'}</h2>
+            <p className="text-sm text-indigo-400 font-bold bg-indigo-500/10 px-3 py-1 rounded-full mb-4">{userRole || 'Admin'}</p>
             
             <div className="w-full space-y-3 mt-4 text-start">
               <div className="flex items-center gap-3 text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">

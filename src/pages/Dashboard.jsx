@@ -79,7 +79,7 @@ export default function Dashboard() {
 
         const [salesRes, purchasesRes, payrollRes, customersRes, inventoryRes, employeesRes] =
           await Promise.allSettled([
-            supabase.from('sales').select('amount, status, invoice_id').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false }),
+            supabase.from('sales').select('amount, status, invoice_id, customer_id, invoice_date').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false }),
             supabase.from('purchases').select('total_amount, invoice_id').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false }),
             supabase.from('payroll').select('net_salary, basic_salary').eq('tenant_id', currentTenantId),
             supabase.from('customers').select('*', { count: 'exact', head: true }).eq('tenant_id', currentTenantId),
@@ -147,17 +147,17 @@ export default function Dashboard() {
     ─────────────────────────────────────────────────────────────────── */
     const channel = supabase
       .channel('dashboard-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sales', filter: `tenant_id=eq.${currentTenantId}` },
         (payload) => {
           console.log('[Realtime] sales change:', payload.eventType);
           fetchDashboardStats();
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases' },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchases', filter: `tenant_id=eq.${currentTenantId}` },
         (payload) => {
           console.log('[Realtime] purchases change:', payload.eventType);
           fetchDashboardStats();
         })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll' },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'payroll', filter: `tenant_id=eq.${currentTenantId}` },
         (payload) => {
           console.log('[Realtime] payroll change:', payload.eventType);
           fetchDashboardStats();

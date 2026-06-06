@@ -157,7 +157,7 @@ export default function PurchaseInvoices() {
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();
-        const payload = { ...form, user_id };
+        const payload = { ...form, user_id, tenant_id: currentTenantId };
         const { data: newRecords, error } = await supabase.from('purchases').insert([payload]).select();
         if (error) throw error;
 

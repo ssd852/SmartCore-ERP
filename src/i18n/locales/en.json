@@ -121,7 +121,9 @@
   "equity": "Equity",
   "incoming": "Incoming",
   "outgoing": "Outgoing",
-  "system_tools": "System Tools",
   "sql_engine": "SQL Engine",
-  "data_management": "Data Management"
+  "data_management": "Data Management",
+  "admin_security": "Admin Security",
+  "security_audit": "Security Audit",
+  "success_saved": "Saved successfully"
 }

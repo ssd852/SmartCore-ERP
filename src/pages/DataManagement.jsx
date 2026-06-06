@@ -652,7 +652,7 @@ function DangerSection({ onWipeComplete }) {
       setWipeResult({ error: err.message });
       addToast('فشل الحذف: ' + err.message, 'error');
     } finally {
-      setTimeout(() => { if (wipeState !== 'idle') setWipeState('idle'); }, 6000);
+      setTimeout(() => { setWipeState(prev => prev !== 'idle' ? 'idle' : prev); }, 6000);
     }
   };
 
@@ -872,7 +872,7 @@ function MasterResetSection({ onWipeComplete }) {
       setWipeResult({ error: err.message });
       addToast('فشل تصفير النظام: ' + err.message, 'error');
     } finally {
-      setTimeout(() => { if (wipeState !== 'idle') setWipeState('idle'); }, 6000);
+      setTimeout(() => { setWipeState(prev => prev !== 'idle' ? 'idle' : prev); }, 6000);
     }
   };
 

@@ -17,6 +17,9 @@ export default function ProtectedRoute({ children }) {
     supabase.auth.getSession().then(({ data }) => {
       setAuthed(!!data?.session?.user);
       setChecking(false);
+    }).catch(() => {
+      setAuthed(false);
+      setChecking(false);
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {

@@ -64,7 +64,7 @@ function SalesInvoiceForm({ row, onClose, onSave, isSaving, currentTenantId }) {
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-bold text-slate-400 mb-1.5">إجمالي الفاتورة</label>
+          <label className="block text-xs font-bold text-slate-400 mb-1.5">{t('amount')}</label>
           <input className="erp-input text-left" dir="ltr" type="number" step="any" value={form.amount} onChange={e => set('amount', e.target.value)} required disabled={isSaving} />
         </div>
         <div>
@@ -163,7 +163,7 @@ export default function SalesInvoices() {
         addToast(t('edit') + ' ✓', 'info');
       } else {
         const user_id = await getAuthUserId();
-        const payload = { ...form, user_id };
+        const payload = { ...form, user_id, tenant_id: currentTenantId };
         const { data: newRecords, error } = await supabase.from('sales').insert([payload]).select();
         if (error) throw error;
 
