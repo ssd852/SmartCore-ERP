@@ -84,7 +84,7 @@ export default function ChartOfAccounts() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [authUser?.id]);
+  useEffect(() => { fetchData(); }, [currentTenantId]);
 
   const handleSave = async (form, row, onClose) => {
     setIsSaving(true);

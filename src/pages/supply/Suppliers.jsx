@@ -54,7 +54,7 @@ export default function Suppliers() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [authUser?.id]);
+  useEffect(() => { fetchData(); }, [currentTenantId]);
 
   const handleSaveSupplier = async (e) => {
     e.preventDefault();

@@ -106,7 +106,7 @@ export default function Checks() {
     }
   };
 
-  useEffect(() => { fetchData(); }, [authUser?.id]);
+  useEffect(() => { fetchData(); }, [currentTenantId]);
 
   const handleSave = async (form, row, onClose) => {
     setIsSaving(true);

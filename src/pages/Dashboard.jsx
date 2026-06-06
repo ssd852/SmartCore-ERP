@@ -159,7 +159,7 @@ export default function Dashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [authUser?.id]);
+  }, [currentTenantId]);
 
   const {
     totalSales, totalPurchases, totalPayroll, netProfit,

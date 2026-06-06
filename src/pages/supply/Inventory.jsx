@@ -155,7 +155,7 @@ export default function Inventory() {
   useEffect(() => {
     setSidebarCollapsed(true);
     fetchData();
-  }, [authUser?.id]);
+  }, [currentTenantId]);
 
   // Update refs for global listener
   useEffect(() => { terminalModeRef.current = terminalMode; }, [terminalMode]);
