@@ -38,8 +38,8 @@ export default function SecurityAudit() {
         const { data: { session } } = await supabase.auth.getSession();
         const tenantId = session?.user?.id;
         if (!tenantId) {
-          console.warn('[SecurityAudit] No authenticated tenant — aborting activity_logs fetch to prevent cross-tenant leak.');
-          setLogs([]);
+          console.warn('[SecurityAudit] No authenticated tenant — waiting for auth to resolve.');
+          // Leave isLoading=true (set at top of function) — the dep on currentTenantId will re-fire once SIGNED_IN resolves.
           return;
         }
         // Strictly query activity_logs filtered by the current tenant only

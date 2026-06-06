@@ -25,7 +25,7 @@ export default function Reports() {
 
     // SECURITY: Resolve tenant ID before any query
     const currentTenantId = authUser?.id;
-    if (!currentTenantId) { setIsLoading(false); return; }
+    if (!currentTenantId) { setIsLoading(true); return; }
 
     async function fetchAll() {
       setIsLoading(true);

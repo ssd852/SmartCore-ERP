@@ -83,7 +83,7 @@ export default function FixedAssets() {
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       // SECURITY: enforce tenant isolation
-      if (!currentTenantId) { setIsLoading(false); return; }
+      if (!currentTenantId) { setIsLoading(true); return; }
       const { data: rows, error } = await supabase.from('assets').select('*').eq('tenant_id', currentTenantId).order('asset_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);

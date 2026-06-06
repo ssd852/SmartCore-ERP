@@ -34,7 +34,7 @@ export default function Suppliers() {
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       // SECURITY: If auth hasn't hydrated yet, silently wait — do NOT throw
-      if (!currentTenantId) { setIsLoading(false); return; }
+      if (!currentTenantId) { setIsLoading(true); return; }
       const { data: rows, error } = await supabase.from('suppliers').select('*').eq('tenant_id', currentTenantId).order('id', { ascending: false });
       if (error) {
         if (error.code === '42P01') {

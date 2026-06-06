@@ -122,7 +122,7 @@ export default function SalesInvoices() {
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
       // SECURITY: If auth hasn't hydrated yet, silently wait — do NOT throw
-      if (!currentTenantId) { setIsLoading(false); return; }
+      if (!currentTenantId) { setIsLoading(true); return; }
       const { data: rows, error } = await supabase.from('sales').select('*').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
