@@ -63,20 +63,20 @@ export default function Dashboard() {
       return;
     }
 
+    // SECURITY: Hoist tenant ID to outer useEffect scope so BOTH the async
+    // fetch function AND the realtime channel filter can reference it.
+    const currentTenantId = authUser?.id;
+    if (!currentTenantId) {
+      console.warn('[Dashboard] No authenticated tenant — aborting to prevent cross-tenant leak.');
+      setIsLoading(false);
+      return;
+    }
+
     /* ── Fetch ALL raw rows from every table concurrently.
-          Hoisted outside the channel callback so realtime can re-call it. ── */
+          Defined here so realtime callbacks can re-invoke it. ── */
     async function fetchDashboardStats() {
       setIsLoading(true);
       try {
-        // ── SECURITY: Resolve tenant ID from active session before ANY query ──
-        const { data: { session } } = await supabase.auth.getSession();
-        const currentTenantId = session?.user?.id;
-        if (!currentTenantId) {
-          console.warn('[Dashboard] No authenticated tenant — aborting fetch to prevent cross-tenant leak.');
-          setIsLoading(false);
-          return;
-        }
-
         const [salesRes, purchasesRes, payrollRes, customersRes, inventoryRes, employeesRes] =
           await Promise.allSettled([
             supabase.from('sales').select('amount, status, invoice_id, customer_id, invoice_date').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false }),
@@ -90,17 +90,7 @@ export default function Dashboard() {
         const salesData     = (salesRes.status     === 'fulfilled' && !salesRes.value.error)     ? (salesRes.value.data     ?? []) : [];
         const purchasesData = (purchasesRes.status === 'fulfilled' && !purchasesRes.value.error) ? (purchasesRes.value.data ?? []) : [];
         const payrollData   = (payrollRes.status   === 'fulfilled' && !payrollRes.value.error)   ? (payrollRes.value.data   ?? []) : [];
-        const customersData = (customersRes.status === 'fulfilled' && !customersRes.value.error) ? (customersRes.value.data ?? []) : [];
         const inventoryData = (inventoryRes.status === 'fulfilled' && !inventoryRes.value.error) ? (inventoryRes.value.data ?? []) : [];
-        const employeesData = (employeesRes.status === 'fulfilled' && !employeesRes.value.error) ? (employeesRes.value.data ?? []) : [];
-
-        console.log('[Dashboard] Raw data:', {
-          salesData, purchasesData, payrollData,
-          customersData, inventoryData, employeesData,
-          salesErr:     salesRes.status     === 'fulfilled' ? salesRes.value.error     : salesRes.reason,
-          purchasesErr: purchasesRes.status === 'fulfilled' ? purchasesRes.value.error : purchasesRes.reason,
-          payrollErr:   payrollRes.status   === 'fulfilled' ? payrollRes.value.error   : payrollRes.reason,
-        });
 
         const totalSales = salesData.reduce(
           (sum, item) => sum + (Number(item.amount) || Number(item.total_amount) || Number(item.total) || 0), 0
@@ -120,8 +110,6 @@ export default function Dashboard() {
         const lowStockItems     = inventoryData.filter(r => Number(r.quantity) < 20).length;
         const recentInvoices    = salesData.slice(0, 5);
         const netProfit         = totalSales - (totalPurchases + totalPayroll);
-
-        console.log('[Dashboard] Metrics:', { totalSales, totalPurchases, totalPayroll, netProfit, totalCustomers, employeeCount });
 
         setStats({
           totalSales, totalPurchases, totalPayroll, netProfit,
@@ -144,6 +132,7 @@ export default function Dashboard() {
           Listens to INSERT / UPDATE / DELETE on the 3 financial tables.
           Any change triggers a full re-fetch so numbers update instantly.
           One channel handles all 3 tables to minimise WebSocket connections.
+          Filter by tenant_id ensures we only react to THIS tenant's data.
     ─────────────────────────────────────────────────────────────────── */
     const channel = supabase
       .channel('dashboard-realtime')
@@ -170,7 +159,7 @@ export default function Dashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [authUser?.id]);
 
   const {
     totalSales, totalPurchases, totalPayroll, netProfit,
