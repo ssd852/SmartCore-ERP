@@ -52,6 +52,8 @@ function FixedAssetForm({ row, onClose, onSave, isSaving }) {
 
 export default function FixedAssets() {
   const { printDocument, authUser, userRole } = useApp();
+  // SECURITY: extract current tenant ID from authenticated user
+  const currentTenantId = authUser?.id;
   const getDynamicRole = () => {
     const activeUserEmail = authUser?.email || '';
     const activeUserRole = authUser?.user_metadata?.role || userRole || '';
@@ -80,7 +82,9 @@ export default function FixedAssets() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { data: rows, error } = await supabase.from('assets').select('*').order('asset_id', { ascending: false });
+      // SECURITY: enforce tenant isolation
+      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      const { data: rows, error } = await supabase.from('assets').select('*').eq('tenant_id', currentTenantId).order('asset_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
     } catch (err) {

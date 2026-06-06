@@ -7,7 +7,9 @@ import { supabase, supabaseReady } from '../../config/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Suppliers() {
-  const { lang, printDocument } = useApp();
+  const { lang, printDocument, authUser } = useApp();
+  // SECURITY: extract current tenant ID from authenticated user
+  const currentTenantId = authUser?.id;
   const { t } = useTranslation();
   const addToast = useToast();
 
@@ -31,7 +33,9 @@ export default function Suppliers() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { data: rows, error } = await supabase.from('suppliers').select('*').order('id', { ascending: false });
+      // SECURITY: enforce tenant isolation
+      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      const { data: rows, error } = await supabase.from('suppliers').select('*').eq('tenant_id', currentTenantId).order('id', { ascending: false });
       if (error) {
         if (error.code === '42P01') {
           addToast('يرجى إنشاء جدول suppliers في قاعدة البيانات أولاً', 'error');

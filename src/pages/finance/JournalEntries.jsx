@@ -51,7 +51,9 @@ function JournalEntryForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function JournalEntries() {
-  const { printDocument } = useApp();
+  const { printDocument, authUser } = useApp();
+  // SECURITY: extract current tenant ID from authenticated user
+  const currentTenantId = authUser?.id;
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -71,7 +73,9 @@ export default function JournalEntries() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { data: rows, error } = await supabase.from('journals').select('*').order('entry_id', { ascending: false });
+      // SECURITY: enforce tenant isolation
+      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      const { data: rows, error } = await supabase.from('journals').select('*').eq('tenant_id', currentTenantId).order('entry_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
     } catch (err) {

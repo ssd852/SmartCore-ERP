@@ -8,7 +8,7 @@ import { supabase, supabaseReady } from '../../config/supabaseClient';
 import { getAuthUserId } from '../../utils/getAuthUserId';
 import { printPurchaseInvoice } from '../../utils/printDocument';
 
-function PurchaseInvoiceForm({ row, onClose, onSave, isSaving }) {
+function PurchaseInvoiceForm({ row, onClose, onSave, isSaving, currentTenantId }) {
   const { t } = useTranslation();
   const [form, setForm] = useState({
     supplier_id: row?.supplier_id || '',
@@ -25,8 +25,12 @@ function PurchaseInvoiceForm({ row, onClose, onSave, isSaving }) {
     async function fetchSuppliers() {
       try {
         if (!supabaseReady) return;
-        // Fetch new suppliers schema: id and name
-        const { data, error } = await supabase.from('suppliers').select('id, name, company_name').order('name');
+        // SECURITY: filter suppliers to current tenant only
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select('id, name, company_name')
+          .eq('tenant_id', currentTenantId)
+          .order('name');
         if (!error && data) {
           setSuppliers(data);
           if (!form.supplier_id && data.length > 0) {
@@ -40,7 +44,7 @@ function PurchaseInvoiceForm({ row, onClose, onSave, isSaving }) {
       }
     }
     fetchSuppliers();
-  }, []);
+  }, [currentTenantId]);
 
   return (
     <form onSubmit={e => { e.preventDefault(); onSave(form); }} className="flex flex-col gap-4">
@@ -87,6 +91,8 @@ function PurchaseInvoiceForm({ row, onClose, onSave, isSaving }) {
 
 export default function PurchaseInvoices() {
   const { printDocument, authUser, userRole } = useApp();
+  // SECURITY: extract current tenant ID from authenticated user
+  const currentTenantId = authUser?.id;
   const getDynamicRole = () => {
     const activeUserEmail = authUser?.email || '';
     const activeUserRole = authUser?.user_metadata?.role || userRole || '';
@@ -115,7 +121,9 @@ export default function PurchaseInvoices() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { data: rows, error } = await supabase.from('purchases').select('*').order('invoice_id', { ascending: false });
+      // SECURITY: enforce tenant isolation on all purchase queries
+      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      const { data: rows, error } = await supabase.from('purchases').select('*').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
     } catch (err) {
@@ -210,7 +218,7 @@ export default function PurchaseInvoices() {
   };
 
   const form = ({ row, onClose }) => (
-    <PurchaseInvoiceForm row={row} onClose={onClose} isSaving={isSaving} onSave={(f) => handleSave(f, row, onClose)} />
+    <PurchaseInvoiceForm row={row} onClose={onClose} isSaving={isSaving} currentTenantId={currentTenantId} onSave={(f) => handleSave(f, row, onClose)} />
   );
 
   return (

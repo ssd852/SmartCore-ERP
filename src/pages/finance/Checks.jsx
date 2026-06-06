@@ -62,6 +62,8 @@ function CheckForm({ row, onClose, onSave, isSaving }) {
 
 export default function Checks() {
   const { printDocument, authUser, userRole } = useApp();
+  // SECURITY: extract current tenant ID from authenticated user
+  const currentTenantId = authUser?.id;
   const getDynamicRole = () => {
     const activeUserEmail = authUser?.email || '';
     const activeUserRole = authUser?.user_metadata?.role || userRole || '';
@@ -91,7 +93,9 @@ export default function Checks() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { data: rows, error } = await supabase.from('checks').select('*').order('check_id', { ascending: false });
+      // SECURITY: enforce tenant isolation
+      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      const { data: rows, error } = await supabase.from('checks').select('*').eq('tenant_id', currentTenantId).order('check_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
     } catch (err) {

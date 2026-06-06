@@ -123,6 +123,8 @@ function InventoryForm({ row, prefilledBarcode, onClose, onSave, isSaving }) {
 // --- Main Module ---
 export default function Inventory() {
   const { setSidebarCollapsed, lang, printDocument, authUser, userRole } = useApp();
+  // SECURITY: extract current tenant ID from authenticated user
+  const currentTenantId = authUser?.id;
   const getDynamicRole = () => {
     const activeUserEmail = authUser?.email || '';
     const activeUserRole = authUser?.user_metadata?.role || userRole || '';
@@ -192,7 +194,9 @@ export default function Inventory() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { data: rows, error } = await supabase.from('inventory').select('*').order('item_id', { ascending: false });
+      // SECURITY: enforce tenant isolation
+      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      const { data: rows, error } = await supabase.from('inventory').select('*').eq('tenant_id', currentTenantId).order('item_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
     } catch (err) {

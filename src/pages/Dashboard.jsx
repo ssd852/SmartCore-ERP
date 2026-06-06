@@ -45,7 +45,7 @@ const DEFAULT_STATS = {
 
 export default function Dashboard() {
   const { t } = useTranslation();
-  const { lang } = useApp();
+  const { lang, authUser } = useApp();
 
   const [stats, setStats]       = useState(DEFAULT_STATS);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,14 +68,23 @@ export default function Dashboard() {
     async function fetchDashboardStats() {
       setIsLoading(true);
       try {
+        // ── SECURITY: Resolve tenant ID from active session before ANY query ──
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentTenantId = session?.user?.id;
+        if (!currentTenantId) {
+          console.warn('[Dashboard] No authenticated tenant — aborting fetch to prevent cross-tenant leak.');
+          setIsLoading(false);
+          return;
+        }
+
         const [salesRes, purchasesRes, payrollRes, customersRes, inventoryRes, employeesRes] =
           await Promise.allSettled([
-            supabase.from('sales').select('amount, status, invoice_id').order('invoice_id', { ascending: false }),
-            supabase.from('purchases').select('total_amount, invoice_id').order('invoice_id', { ascending: false }),
-            supabase.from('payroll').select('net_salary, basic_salary'),
-            supabase.from('customers').select('*', { count: 'exact', head: true }),
-            supabase.from('inventory').select('quantity', { count: 'exact' }),
-            supabase.from('employees').select('*', { count: 'exact', head: true }),
+            supabase.from('sales').select('amount, status, invoice_id').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false }),
+            supabase.from('purchases').select('total_amount, invoice_id').eq('tenant_id', currentTenantId).order('invoice_id', { ascending: false }),
+            supabase.from('payroll').select('net_salary, basic_salary').eq('tenant_id', currentTenantId),
+            supabase.from('customers').select('*', { count: 'exact', head: true }).eq('tenant_id', currentTenantId),
+            supabase.from('inventory').select('quantity', { count: 'exact' }).eq('tenant_id', currentTenantId),
+            supabase.from('employees').select('*', { count: 'exact', head: true }).eq('tenant_id', currentTenantId),
           ]);
 
         const salesData     = (salesRes.status     === 'fulfilled' && !salesRes.value.error)     ? (salesRes.value.data     ?? []) : [];

@@ -51,7 +51,9 @@ function CustomerForm({ row, onClose, onSave, isSaving }) {
 }
 
 export default function Customers() {
-  const { printDocument } = useApp();
+  const { printDocument, authUser } = useApp();
+  // SECURITY: extract current tenant ID from authenticated user
+  const currentTenantId = authUser?.id;
   const { t } = useTranslation();
   const addToast = useToast();
   
@@ -71,7 +73,9 @@ export default function Customers() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { data: rows, error } = await supabase.from('customers').select('*').order('customer_id', { ascending: false });
+      // SECURITY: enforce tenant isolation
+      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      const { data: rows, error } = await supabase.from('customers').select('*').eq('tenant_id', currentTenantId).order('customer_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
     } catch (err) {

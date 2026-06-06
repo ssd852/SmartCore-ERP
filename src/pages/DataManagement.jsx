@@ -286,13 +286,18 @@ const generateHTMLReport = (tableNameArabic, tableNameEnglish, data) => {
   `.trim();
 };
 
-const fetchTableData = async (tableName) => {
+const fetchTableData = async (tableName, tenantId) => {
+  // SECURITY: tenantId is mandatory — no tenant = no data
+  if (!tenantId) {
+    throw new Error('[SECURITY] currentTenantId is undefined — aborting data fetch to prevent cross-tenant leak.');
+  }
+
   let query = '*';
   if (tableName === 'sales') query = '*, customers(name)';
   else if (tableName === 'purchases') query = '*, suppliers(company_name)';
   else if (tableName === 'payroll') query = '*, employees(name)';
 
-  const { data: rows, error } = await supabase.from(tableName).select(query);
+  const { data: rows, error } = await supabase.from(tableName).select(query).eq('tenant_id', tenantId);
   if (error) throw error;
   
   return (rows || []).map(row => {
@@ -319,14 +324,28 @@ function BackupSection() {
   const [backupState, setBackupState] = useState('idle');
   const [progress, setProgress] = useState({ current: 0, total: BACKUP_TABLES.length, label: '' });
   const [tableCounts, setTableCounts] = useState({});
+  const [currentTenantId, setCurrentTenantId] = useState(null);
 
   useEffect(() => {
     async function fetchCounts() {
       if (!supabaseReady || !supabase) return;
+
+      // SECURITY: resolve tenant ID before any query
+      const { data: { session } } = await supabase.auth.getSession();
+      const tenantId = session?.user?.id;
+      if (!tenantId) {
+        console.warn('[BackupSection] No authenticated tenant — skipping count fetch.');
+        return;
+      }
+      setCurrentTenantId(tenantId);
+
       const counts = {};
       for (const t of BACKUP_TABLES) {
         try {
-          const { count, error } = await supabase.from(t.key).select('*', { count: 'exact', head: true });
+          const { count, error } = await supabase
+            .from(t.key)
+            .select('*', { count: 'exact', head: true })
+            .eq('tenant_id', tenantId);
           counts[t.key] = error ? '?' : count;
         } catch (e) {
           counts[t.key] = '?';
@@ -339,8 +358,10 @@ function BackupSection() {
 
   const downloadSingleTable = async (key, label) => {
     try {
-      if (!supabaseReady || !supabase) throw new Error("قاعدة البيانات غير متصلة");
-      const data = await fetchTableData(key);
+      if (!supabaseReady || !supabase) throw new Error('قاعدة البيانات غير متصلة');
+      // SECURITY: enforce tenant isolation — fail hard if tenantId is missing
+      if (!currentTenantId) throw new Error('[SECURITY] لا يمكن تنزيل النسخة الاحتياطية: currentTenantId غير محدد');
+      const data = await fetchTableData(key, currentTenantId);
       const htmlString = generateHTMLReport(label, key, data);
       const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -361,13 +382,15 @@ function BackupSection() {
     setBackupState('loading');
     setProgress({ current: 0, total: BACKUP_TABLES.length, label: 'جارٍ جلب البيانات...' });
     try {
-      if (!supabaseReady || !supabase) throw new Error("قاعدة البيانات غير متصلة");
+      if (!supabaseReady || !supabase) throw new Error('قاعدة البيانات غير متصلة');
+      // SECURITY: enforce tenant isolation — fail hard if tenantId is missing
+      if (!currentTenantId) throw new Error('[SECURITY] لا يمكن تنفيذ النسخة الاحتياطية الكاملة: currentTenantId غير محدد');
       for (let i = 0; i < BACKUP_TABLES.length; i++) {
         const { key, label } = BACKUP_TABLES[i];
         setProgress({ current: i + 1, total: BACKUP_TABLES.length, label });
 
         try {
-          const data = await fetchTableData(key);
+          const data = await fetchTableData(key, currentTenantId);
 
           const htmlString = generateHTMLReport(label, key, data);
           const blob = new Blob([htmlString], { type: 'text/html;charset=utf-8;' });

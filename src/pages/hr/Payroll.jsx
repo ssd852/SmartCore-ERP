@@ -9,7 +9,7 @@ import { getAuthUserId } from '../../utils/getAuthUserId';
 import { printPayrollSlip } from '../../utils/printDocument';
 import { formatCurrency } from '../../utils/currencyFormatter';
 
-function PayrollForm({ row, onClose, onSave, isSaving }) {
+function PayrollForm({ row, onClose, onSave, isSaving, currentTenantId }) {
   const { t } = useTranslation();
   const [form, setForm] = useState({
     emp_id: row?.emp_id || '',
@@ -26,7 +26,12 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
     async function fetchEmployees() {
       try {
         if (!supabaseReady) return;
-        const { data, error } = await supabase.from('employees').select('emp_id, name').order('name');
+        // SECURITY: filter employees to current tenant only
+        const { data, error } = await supabase
+          .from('employees')
+          .select('emp_id, name')
+          .eq('tenant_id', currentTenantId)
+          .order('name');
         if (!error && data) {
           setEmployees(data);
           if (!form.emp_id && data.length > 0) {
@@ -40,7 +45,7 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
       }
     }
     fetchEmployees();
-  }, []);
+  }, [currentTenantId]);
 
   const net_salary = (Number(form.basic_salary) || 0) - (Number(form.deductions) || 0);
 
@@ -90,6 +95,8 @@ function PayrollForm({ row, onClose, onSave, isSaving }) {
 
 export default function Payroll() {
   const { printDocument, authUser, userRole } = useApp();
+  // SECURITY: extract current tenant ID from authenticated user
+  const currentTenantId = authUser?.id;
   const getDynamicRole = () => {
     const activeUserEmail = authUser?.email || '';
     const activeUserRole = authUser?.user_metadata?.role || userRole || '';
@@ -119,7 +126,9 @@ export default function Payroll() {
     setIsLoading(true);
     try {
       if (!supabaseReady) throw new Error('Supabase is not configured.');
-      const { data: rows, error } = await supabase.from('payroll').select('*').order('payroll_id', { ascending: false });
+      // SECURITY: enforce tenant isolation on all payroll queries
+      if (!currentTenantId) throw new Error('[SECURITY] currentTenantId is undefined — aborting fetch.');
+      const { data: rows, error } = await supabase.from('payroll').select('*').eq('tenant_id', currentTenantId).order('payroll_id', { ascending: false });
       if (error) throw error;
       setData(rows || []);
     } catch (err) {
@@ -199,7 +208,7 @@ export default function Payroll() {
   };
 
   const form = ({ row, onClose }) => (
-    <PayrollForm row={row} onClose={onClose} isSaving={isSaving} onSave={(f) => handleSave(f, row, onClose)} />
+    <PayrollForm row={row} onClose={onClose} isSaving={isSaving} currentTenantId={currentTenantId} onSave={(f) => handleSave(f, row, onClose)} />
   );
 
   return (
