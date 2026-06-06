@@ -96,7 +96,7 @@ function PayrollForm({ row, onClose, onSave, isSaving, currentTenantId }) {
 export default function Payroll() {
   const { printDocument, authUser, userRole } = useApp();
   // SECURITY: extract current tenant ID from authenticated user
-  const currentTenantId = authUser?.id;
+  const currentTenantId = authUser?.user_metadata?.tenant_id || authUser?.id;
   const getDynamicRole = () => {
     const activeUserEmail = authUser?.email || '';
     const activeUserRole = authUser?.user_metadata?.role || userRole || '';

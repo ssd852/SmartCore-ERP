@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 export default function Suppliers() {
   const { lang, printDocument, authUser } = useApp();
   // SECURITY: extract current tenant ID from authenticated user
-  const currentTenantId = authUser?.id;
+  const currentTenantId = authUser?.user_metadata?.tenant_id || authUser?.id;
   const { t } = useTranslation();
   const addToast = useToast();
 

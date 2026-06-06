@@ -65,7 +65,7 @@ export default function Dashboard() {
 
     // SECURITY: Hoist tenant ID to outer useEffect scope so BOTH the async
     // fetch function AND the realtime channel filter can reference it.
-    const currentTenantId = authUser?.id;
+    const currentTenantId = authUser?.user_metadata?.tenant_id || authUser?.id;
     if (!currentTenantId) {
       console.warn('[Dashboard] No authenticated tenant — aborting to prevent cross-tenant leak.');
       setIsLoading(false);

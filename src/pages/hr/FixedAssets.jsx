@@ -53,7 +53,7 @@ function FixedAssetForm({ row, onClose, onSave, isSaving }) {
 export default function FixedAssets() {
   const { printDocument, authUser, userRole } = useApp();
   // SECURITY: extract current tenant ID from authenticated user
-  const currentTenantId = authUser?.id;
+  const currentTenantId = authUser?.user_metadata?.tenant_id || authUser?.id;
   const getDynamicRole = () => {
     const activeUserEmail = authUser?.email || '';
     const activeUserRole = authUser?.user_metadata?.role || userRole || '';

@@ -14,7 +14,7 @@ export default function SecurityAudit() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // SECURITY: resolve tenant ID from live AppContext (backed by active JWT session)
-  const currentTenantId = authUser?.id;
+  const currentTenantId = authUser?.user_metadata?.tenant_id || authUser?.id;
 
   // Strict Client-side Auth
   if (userRole !== 'Admin' && userRole !== 'Superadmin') {
@@ -36,7 +36,7 @@ export default function SecurityAudit() {
         if (!supabaseReady) return;
         // SECURITY: resolve tenant from live session as the authoritative ground-truth
         const { data: { session } } = await supabase.auth.getSession();
-        const tenantId = session?.user?.id;
+        const tenantId = session?.user?.user_metadata?.tenant_id || session?.user?.id;
         if (!tenantId) {
           console.warn('[SecurityAudit] No authenticated tenant — waiting for auth to resolve.');
           // Leave isLoading=true (set at top of function) — the dep on currentTenantId will re-fire once SIGNED_IN resolves.

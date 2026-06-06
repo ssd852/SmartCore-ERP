@@ -24,7 +24,7 @@ export default function Reports() {
     if (!supabaseReady) { setIsLoading(false); return; }
 
     // SECURITY: Resolve tenant ID before any query
-    const currentTenantId = authUser?.id;
+    const currentTenantId = authUser?.user_metadata?.tenant_id || authUser?.id;
     if (!currentTenantId) { setIsLoading(true); return; }
 
     async function fetchAll() {

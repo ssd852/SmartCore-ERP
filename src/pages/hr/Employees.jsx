@@ -140,7 +140,7 @@ export default function Employees() {
       const { data: { session } } = await supabase.auth.getSession();
       let currentTenant = null;
       if (session?.user?.id) {
-        currentTenant = session.user.id;
+        currentTenant = session.user.user_metadata?.tenant_id || session.user.id;
         setTenantId(currentTenant);
       }
 
